@@ -390,6 +390,16 @@ window.onload = function () {
     }
 };
 
+document.getElementById("url").addEventListener("paste", function (e) {
+    e.preventDefault();
+
+    const text = e.clipboardData.getData("text");
+
+    const match = text.match(/https?:\/\/[^\s]+/);
+
+    this.value = match ? match[0] : text;
+});
+
 document.getElementById("url").addEventListener("blur", async function () {
     const url = this.value;
     if (!url.includes("tver.jp")) return;
