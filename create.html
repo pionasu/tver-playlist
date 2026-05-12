@@ -174,6 +174,21 @@
             color: white;
         }
 
+        .fileBtn {
+            display: inline-block;
+            padding: 6px 10px;
+            background: #3366FF;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .fileBtn input {
+            display: none;
+        }
+
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -245,6 +260,11 @@
     <input id="url" placeholder="リンクを挿入">
 
     <input id="thumb" placeholder="サムネURL">
+
+    <label class="fileBtn">
+        ファイル選択
+        <input id="fileThumb" type="file" accept="image/*">
+    </label>
 
     <div class="dateArea">
 
@@ -447,34 +467,21 @@ function getRemainingTime(date) {
     return `${minutes}分`;
 }
 
-function addVideo() {
+async function addVideo () {
 
-    const title =
-        document.getElementById(
-            "title"
-        ).value;
+    const title = document.getElementById("title").value;
+    const url = document.getElementById("url").value;
+    const endDate = document.getElementById("endDate").value;
 
-    const url =
-        document.getElementById(
-            "url"
-        ).value;
-
-    const thumb =
-        document.getElementById(
-            "thumb"
-        ).value;
-
-    const endDate =
-        document.getElementById(
-            "endDate"
-        ).value;
-    
-    const autoDelete =
-        document.getElementById(
-            "autoDelete"
-        ).checked = true;
+    const fileInput = document.getElementById("fileThumb");
+    let thumb = document.getElementById("thumb").value;
+    const autoDelete = document.getElementById("autoDelete").checked;
 
     if (!title || !url) return;
+
+    if (fileInput.files && fileInput.files[0]) {
+        thumb = await fileToBase64(fileInput.files[0]);
+    }
 
     if (editingIndex !== null) {
 
@@ -1037,6 +1044,17 @@ function styleToast(toast) {
     toast.style.whiteSpace = "nowrap";
     toast.style.gap = "10px";
     toast.style.zIndex = "999999";
+}
+
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+
+        reader.readAsDataURL(file);
+    });
 }
 
 </script>
