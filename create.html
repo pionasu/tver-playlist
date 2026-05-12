@@ -366,48 +366,7 @@ window.onload = function () {
     updatePlaylistSelect();
     removeExpiredVideos();
     render();
-
-    const params = new URLSearchParams(location.search);
-
-    const sharedUrl = params.get("url");
-    
-    if (sharedUrl) {
-        document.getElementById("url").value =
-            decodeURIComponent(sharedUrl);
-    }
-
-    const shareInput = document.getElementById("shareInput");
-
-    if (shareInput) {
-        shareInput.addEventListener("paste", function (e) {
-            e.preventDefault();
-
-            const text = (e.clipboardData || window.clipboardData)
-                .getData("text");
-
-            this.value = text;
-        });
-    }
 };
-
-document.getElementById("url").addEventListener("paste", function (e) {
-    e.preventDefault();
-
-    const text = e.clipboardData.getData("text");
-
-    const match = text.match(/https?:\/\/[^\s]+/);
-
-    this.value = match ? match[0] : text;
-});
-
-document.getElementById("url").addEventListener("blur", async function () {
-    const url = this.value;
-    if (!url.includes("tver.jp")) return;
-    const title = await fetchTverTitle(url);
-    if (title) {
-        document.getElementById("title").value = title;
-    }
-});
 
 function save() {
 
@@ -1078,27 +1037,6 @@ function styleToast(toast) {
     toast.style.whiteSpace = "nowrap";
     toast.style.gap = "10px";
     toast.style.zIndex = "999999";
-}
-
-async function fetchTverTitle(url) {
-    try {
-        const res = await fetch(url);
-        const html = await res.text();
-
-        const match = html.match(
-            /<meta property="og:title" content="(.*?)"/
-        );
-
-        if (match) {
-            return match[1];
-        }
-
-        return "";
-    } catch (e) {
-        console.log("title fetch error", e);
-        return "";
-    }
-    
 }
 
 </script>
