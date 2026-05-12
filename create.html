@@ -375,6 +375,19 @@ window.onload = function () {
         document.getElementById("url").value =
             decodeURIComponent(sharedUrl);
     }
+
+    const shareInput = document.getElementById("shareInput");
+
+    if (shareInput) {
+        shareInput.addEventListener("paste", function (e) {
+            e.preventDefault();
+
+            const text = (e.clipboardData || window.clipboardData)
+                .getData("text");
+
+            this.value = text;
+        });
+    }
 };
 
 document.getElementById("url").addEventListener("blur", async function () {
