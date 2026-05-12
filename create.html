@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TVerプレイリスト編集</title>
+
+    <style>
+
+        body {
+            font-family: sans-serif;
+            margin: 10px;
+            background: #f7f7f7;
+        }
+
+        input,
+        textarea {
+            font-size: 16px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        .topBar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .video {
+            background: white;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            cursor: grab;
+        }
+
+        .thumb {
+            width: 120px;
+            height: 70px;
+            background: #ddd;
+            border-radius: 6px;
+            object-fit: cover;
+        }
+
+        .thumbWrap {
+            position: relative;
+            width: 120px;
+            height: 70px;
+            flex-shrink: 0;
+        }
+
+        .playIcon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+
+            width: 38px;
+            height: 38px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 18px;
+
+            color: white;
+
+            background: rgba(0, 0, 0, 0.5);
+
+            border-radius: 50%;
+
+            pointer-events: none;
+        }
+
+        .info {
+            flex: 1;
+        }
+
+        button {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 6px;
+            background: black;
+            color: white;
+            cursor: pointer;
+            margin: 3px;
+        }
+
+        input {
+            padding: 6px;
+            margin: 5px 5px 5px 0;
+        }
+
+        textarea {
+            width: 100%;
+            height: 60px;
+            margin-top: 10px;
+        }
+
+        #editArea {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .dateArea {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dateArea label {
+            font-size: 12px;
+            margin-bottom: 2px;
+            color: #666;
+        }
+
+        .autoSaveArea {
+            margin: 10px 0;
+
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        #playlistSelect {
+            font-size: 20px;
+            font-weight: bold;
+            border: none;
+            background: transparent;
+            padding-right: 20px;
+            margin-bottom: 10px;
+            max-width: 70vw;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .homeButton {
+            background: transparent;
+            color: black;
+            box-shadow: none;
+            font-size: 28px;
+            padding: 0;
+        }
+
+        .addButton {
+            align-self: flex-end;
+            margin-bottom: 9px;
+        }
+
+        .VideoButtons {
+            display: flex;
+            gap: 4px;
+            margin-left: auto;
+        }
+
+        .endDateText {
+            font-size: 12px;
+            color: #777;
+            margin-top: 4px;
+        }
+
+        .deleteBtn {
+            background: #ff4d4d;
+            color: white;
+        }
+
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+</head>
+
+<body>   
+
+<div class="titleBar">
+    <button 
+        type="button"
+        class="homeButton"
+        onclick="goHome()"
+    >
+        🏠
+    </button>
+    <select id="playlistSelect" onchange="changePlaylist()">
+    </select>
+</div>
+
+<div class="topBar">
+
+    <button onclick="createPlaylist()">＋新規プレイリスト</button>
+
+    <button onclick="renamePlaylist()">プレイリスト名変更</button>
+
+    <button onclick="deletePlaylist(currentPlaylist)">プレイリスト削除</button>
+
+</div>
+
+
+
+<div class="autoSaveArea">
+
+    <label>
+        <input
+            type="checkbox"
+            id="autoSaveToggle"
+            checked
+            onchange="toggleSaveButton()"
+        >
+        自動保存ON
+    </label>
+
+    <label>
+        <input
+            type="checkbox"
+            id="autoDelete"
+            checked
+            onchange="toggleSaveButton()"
+        >
+        配信終了後自動削除
+    </label>
+
+    <button 
+        id="saveButton"
+        onclick="savePlaylist()"
+        style="display: none;"
+    >
+        保存
+    </button>
+
+</div>
+
+<div id="editArea">
+
+    <input id="title" placeholder="タイトル">
+
+    <input id="url" placeholder="リンクを挿入">
+
+    <input id="thumb" placeholder="サムネURL">
+
+    <div class="dateArea">
+
+        <label for="endDate">
+            配信終了日
+        </label>
+
+        <input
+            id="endDate"
+            type="datetime-local"
+        >
+
+        <label>
+
+    </div>
+
+    <button 
+        class="addButton"
+        onclick="addVideo()"
+    >
+        追加
+    </button>
+
+</div>
+
+<hr>
+
+<div id="list"></div>
+
+<script>
+
+let playlists = {};
+
+let currentPlaylist = "";
+
+let dragIndex = 0;
+
+let hasUnsavedChanges = false;
+
+let editingIndex = null;
+
+function saveData() {
+    localStorage.setItem("tverPlaylists", JSON.stringify(playlists));
+}
+
+function setCurrentPlaylist(name) {
+    const keys = Object.keys(playlists);
+    if (!name || !playlists[name]) {
+        currentPlaylist = keys[0] || "新規プレイリスト";
+    } else {
+        currentPlaylist = name;
+    }
+    localStorage.setItem("lastPlaylist", currentPlaylist);
+}
+
+function getPlaylistFromURL() {
+
+    const params =
+        new URLSearchParams(location.search);
+
+    const isNew = params.get("new") === "1";
+    const urlPlaylist = params.get("id");
+    const lastPlaylist = localStorage.getItem("lastPlaylist");
+
+    if (isNew) {
+        history.replaceState(null, "", "create.html");
+    }
+
+    if (isNew) {
+        currentPlaylist = "新規プレイリスト";
+    } else if (urlPlaylist && playlists[urlPlaylist]) {
+        currentPlaylist = urlPlaylist;
+    } else if (lastPlaylist && playlists[lastPlaylist]) {
+        currentPlaylist = lastPlaylist;
+    } else {
+        currentPlaylist = "新規プレイリスト";
+    }
+
+    const isFromURL = !!urlPlaylist;
+
+    if (!isNew && !isFromURL) {
+        localStorage.setItem("lastPlaylist", currentPlaylist);
+    }
+
+    localStorage.setItem("lastPlaylist", currentPlaylist);
+}
+
+window.onload = function () {
+
+    const saved =
+        localStorage.getItem("tverPlaylists");
+
+    if (saved) {
+        playlists = JSON.parse(saved);
+    }
+
+    if (!playlists["新規プレイリスト"]) {
+        playlists["新規プレイリスト"] = [];
+    }
+
+    const urlPlaylist =
+        getPlaylistFromURL();
+
+    const lastPlaylist =
+        localStorage.getItem("lastPlaylist");
+
+    if (urlPlaylist && playlists[urlPlaylist]) {
+        currentPlaylist = urlPlaylist;
+    } else     if (lastPlaylist && playlists[lastPlaylist]) {
+        currentPlaylist = lastPlaylist;
+
+    } else {
+        currentPlaylist = "新規プレイリスト";
+    }
+
+    localStorage.setItem("lastPlaylist", currentPlaylist)
+
+    toggleSaveButton();
+    updatePlaylistSelect();
+    removeExpiredVideos();
+    render();
+
+    const params =
+        new URLSearchParams(location.search);
+
+    const sharedUrl =
+        params.get("url");
+    
+    if (sharedUrl) {
+        document.getElementById("url").value =
+            decodeURIComponent(sharedUrl);
+    }
+};
+
+function save() {
+
+    localStorage.setItem(
+        "tverPlaylists",
+        JSON.stringify(playlists)
+    );
+}
+
+function autoSave() {
+
+    const enabled =
+        document.getElementById(
+            "autoSaveToggle"
+        ).checked;
+
+    if (enabled) {
+        save();
+        hasUnsavedChanges = false;
+    } else {
+        hasUnsavedChanges = true;
+    }
+}
+
+function formatDateTime(date) {
+
+    if (!date) return "";
+
+    const d = new Date(date);
+
+    return d.toLocaleString(
+        "ja-JP",
+        {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
+}
+
+function getRemainingTime(date) {
+
+    if (!date) return "";
+
+    const now = new Date();
+
+    const end = new Date(date);
+
+    const diff = end - now;
+
+    if (diff <= 0) {
+        return "配信終了";
+    }
+
+    const minutes =
+        Math.floor(
+            diff / (1000 * 60)
+        );
+
+    const hours =
+        Math.floor(
+            diff / (1000 * 60 * 60)
+        );
+
+    const days =
+        Math.floor(hours / 24);
+
+    if (days > 0) {
+        return `${days}日`;
+    }
+
+    if (hours >= 1) {
+        return `${hours}時間`;
+    }
+
+    return `${minutes}分`;
+}
+
+function addVideo() {
+
+    const title =
+        document.getElementById(
+            "title"
+        ).value;
+
+    const url =
+        document.getElementById(
+            "url"
+        ).value;
+
+    const thumb =
+        document.getElementById(
+            "thumb"
+        ).value;
+
+    const endDate =
+        document.getElementById(
+            "endDate"
+        ).value;
+    
+    const autoDelete =
+        document.getElementById(
+            "autoDelete"
+        ).checked = true;
+
+    if (!title || !url) return;
+
+    if (editingIndex !== null) {
+
+        playlists[currentPlaylist][editingIndex] = {
+            title,
+            url,
+            thumb,
+            endDate,
+            autoDelete
+        };
+
+        editingIndex = null;
+
+        document.querySelector(
+            "#editArea button"
+        ).textContent = "追加";
+
+    } else {
+
+        playlists[currentPlaylist].push({
+            title,
+            url,
+            thumb,
+            endDate,
+            autoDelete
+        });
+    }
+
+    document.getElementById(
+        "title"
+    ).value = "";
+
+    document.getElementById(
+        "url"
+    ).value = "";
+
+    document.getElementById(
+        "thumb"
+    ).value = "";
+
+    document.getElementById(
+        "endDate"
+    ).value = "";
+
+    autoSave();
+
+    render();
+}
+
+function render() {
+
+    const list =
+        document.getElementById("list");
+
+    list.innerHTML = "";
+
+    playlists[currentPlaylist]
+    .forEach((v, index) => {
+
+        const div =
+            document.createElement("div");
+
+        div.className = "video";
+
+        const img = `
+            <div
+                class="thumbWrap"
+                onclick="play(${index})"
+            >
+                ${
+                    v.thumb
+                    ? `<img class="thumb" src="${v.thumb}">`
+                    : `<div class="thumb"></div>`
+                }
+
+                <div class="playIcon">
+                    ▶
+                </div>
+            </div>
+        `;
+
+        div.innerHTML = `
+
+            ${img}
+
+            <div class="info">
+
+                <b>
+                    ${index + 1}.
+                    ${v.title}
+                </b>
+
+                <br>
+
+                <div
+                    style="
+                        display:flex;
+                        align-items:center;
+                        gap:10px;
+                        margin-top:4px;    
+                    "
+                >
+
+                    ${
+                        v.endDate
+                        ? `<div class="endDateText">
+                            配信終了日：
+                            ${formatDateTime(v.endDate)}
+                        </div>`
+
+                        : `<div clas="endDateText"></div>`
+                    } 
+
+                <div class="VideoButtons">
+
+                    <button onclick="editVideo(${index})">
+                        編集
+                    </button>
+
+                    <button 
+                        class="deleteBtn"
+                        onclick="removeVideo(${index})"
+                    >
+                        削除
+                    </button>
+                </div>
+            </div>
+        `;
+
+        list.appendChild(div);
+    });
+}
+
+function play(index) {
+
+    window.open(
+        playlists[currentPlaylist][index].url,
+        "_blank"
+    );
+}
+
+function editVideo (index) {
+    const video = playlists[currentPlaylist][index];
+    const newTitle = 
+        prompt(
+            "タイトル",
+            video.title
+        );
+
+    if (newTitle === null) return;
+
+    const newThumb =
+        prompt(
+            "サムネURL",
+            video.thumb || ""
+        );
+
+    if (newThumb === null) return;
+
+    const newEndDate =
+        prompt(
+            "配信終了日",
+            video.endDate || ""
+        );
+
+    if (newEndDate === null) return;
+
+    video.title = newTitle;
+    video.thumb = newThumb;
+    video.endDate = newEndDate;
+
+    autoSave();
+
+    render();
+}
+
+function removeVideo(index) {
+
+    const video = playlists[currentPlaylist][index];
+
+    const ok = confirm("削除しますか？");
+    if (!ok) return;
+
+    let trash = JSON.parse(localStorage.getItem("trashVideos") || "{}");
+
+    const key = currentPlaylist;
+
+    if (!trash[key]) trash[key] = [];
+
+    trash[key].push({
+        video,
+        index
+    });
+
+    localStorage.setItem("trashVideos", JSON.stringify(trash));
+
+    playlists[currentPlaylist].splice(index, 1);
+
+    autoSave();
+    render();
+
+    showUndoToastVideo(video, index);
+}
+
+function editVideo(index) {
+
+    const video =
+        playlists[currentPlaylist][index];
+
+    document.getElementById("title").value =
+        video.title;
+
+    document.getElementById("url").value =
+        video.url;
+
+    document.getElementById("thumb").value =
+        video.thumb || "";
+
+    document.getElementById("endDate").value =
+        video.endDate || "";
+
+    document.getElementById("autoDelete").checked =
+        video.autoDelete || false;
+
+    editingIndex = index;
+
+    document.querySelector(
+        "#editArea button"
+    ).textContent = "更新";
+}
+
+function savePlaylist() {
+
+    const ok =
+        confirm(
+            "この内容で保存しますか？"
+        );
+
+    if (!ok) return;
+
+    save();
+
+    hasUnsavedChanges = false;
+
+    alert("保存しました！");
+}
+
+function createPlaylist() {
+
+    const name =
+        prompt("プレイリスト名");
+
+    if (!name) return;
+
+    if (playlists[name]) {
+
+        alert(
+            "同じ名前があります"
+        );
+
+        return;
+    }
+
+    playlists[name] = [];
+
+    currentPlaylist = name;
+
+    localStorage.setItem("lastPlaylist", currentPlaylist);
+
+    autoSave();
+
+    updatePlaylistSelect();
+
+    render();
+}
+
+function renamePlaylist() {
+
+    const newName =
+        prompt(
+            "新しいプレイリスト名",
+            currentPlaylist
+        );
+
+    if (!newName) return;
+
+    if (playlists[newName]) {
+
+        alert(
+            "同じ名前があります"
+        );
+
+        return;
+    }
+
+    playlists[newName] =
+        playlists[currentPlaylist];
+
+    delete playlists[currentPlaylist];
+
+    currentPlaylist = newName;
+
+    localStorage.setItem("lastPlaylist", currentPlaylist);
+
+    autoSave();
+
+    updatePlaylistSelect();
+
+    render();
+}
+
+function deletePlaylist(name) {
+
+    const ok = confirm(`「${name}」を削除しますか？`);
+    if (!ok) return;
+
+    let trash = JSON.parse(localStorage.getItem("trashPlaylists") || "{}");
+    trash[name] = playlists[name];
+    localStorage.setItem("trashPlaylists", JSON.stringify(trash));
+
+    delete playlists[name];
+
+    saveData();
+
+    if (currentPlaylist === name) {
+        currentPlaylist = Object.keys(playlists)[0] || "新規プレイリスト";
+    }
+
+    setCurrentPlaylist(currentPlaylist);
+
+    updatePlaylistSelect();
+    render();
+
+    showUndoToastPlaylist(name);
+}
+
+function updatePlaylistSelect() {
+
+    const select =
+        document.getElementById(
+            "playlistSelect"
+        );
+
+    select.innerHTML = "";
+
+    if (!currentPlaylist) {
+        const firstOption = document.createElement("option");
+
+        firstOption.textContent = "新規プレイリスト作成";
+
+        firstOption.disabled = true;
+        firstOption.selected = true;
+
+        select.appendChild(firstOption);
+    }
+
+    for (const name in playlists) {
+
+        const option =
+            document.createElement(
+                "option"
+            );
+
+        option.value = name;
+
+        option.textContent = name;
+
+        select.appendChild(option);
+    }
+
+    if (currentPlaylist) {
+        select.value = currentPlaylist;
+    }
+}
+
+function changePlaylist() {
+
+    const enabled = document.getElementById("autoSaveToggle").checked;
+    if (!enabled && hasUnsavedChanges) {
+        const ok = confirm("保存していません。ページを移動しますか？");
+        if (!ok) return;
+    }
+
+    currentPlaylist =
+        document.getElementById("playlistSelect").value;
+    
+    localStorage.setItem("lastPlaylist", currentPlaylist);
+
+    history.replaceState(null, "", `create.html?id=${encodeURIComponent(currentPlaylist)}`);
+
+    render();
+}
+
+function goHome() {
+    const enabled = document.getElementById("autoSaveToggle").checked;
+    if (
+        !enabled && hasUnsavedChanges
+    ) {
+        const ok = confirm("保存していません。ページを移動しますか？");
+
+        if (!ok) return;
+    }
+
+    location.href = "index.html";
+}
+
+function toggleSaveButton() {
+    const enabled = document.getElementById("autoSaveToggle").checked;
+    const button = document.getElementById("saveButton");
+
+    if (enabled) {
+        button.style.display = "none";
+    } else {
+        button.style.display = "inline-block";
+    }
+
+}
+
+function removeExpiredVideos() {
+    const now = new Date();
+    for (const playlist in playlists) {
+
+        playlists[playlist] = 
+            playlists[playlist].filter(video => {
+                if (video.autoDelete && video.endDate) {
+                    return new Date(video.endDate) > now;
+                }
+                return true;
+            });
+    }
+    save();
+}
+
+new Sortable(
+    document.getElementById("list"),
+    {
+        animation: 150,
+        delay: 200,
+        delayOnTouchOnly: true,
+        touchStartThreshold: 5,
+        forceFallback: true,
+        onEnd: function (evt) {
+            const moved =
+                playlists[currentPlaylist].splice(evt.oldIndex, 1)[0];
+            playlists[currentPlaylist].splice(evt.newIndex, 0, moved);
+
+            autoSave();
+            render();
+        }
+    }
+);
+
+function showUndoToastVideo(video, index) {
+
+    const toast = document.createElement("div");
+
+    toast.textContent = "動画を削除しました";
+
+    const undo = document.createElement("button");
+    undo.textContent = "元に戻す";
+
+    undo.style.marginLeft = "10px";
+    undo.style.background = "white";
+    undo.style.color = "black";
+    undo.style.border = "none";
+    undo.style.borderRadius = "6px"
+    undo.style.padding = "4px 8px"
+    undo.style.cursor = "pointer";
+    undo.style.display = "flex";
+    undo.style.alignItems = "center";
+    undo.style.justifyContent = "center";
+
+    undo.onclick = function () {
+
+        playlists[currentPlaylist].splice(index, 0, video);
+
+        let trash =
+            JSON.parse(localStorage.getItem("trashVideos") || "{}");
+
+        if (trash[currentPlaylist]) {
+            trash[currentPlaylist].pop();
+        }
+
+        localStorage.setItem("trashVideos", JSON.stringify(trash));
+
+        autoSave();
+        render();
+
+        toast.remove();
+    };
+
+    toast.appendChild(undo);
+
+    styleToast(toast);
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.remove(), 5000);
+}
+
+function showUndoToastPlaylist(name) {
+
+    const toast = document.createElement("div");
+    toast.textContent = "プレイリストを削除しました";
+
+    const undo = document.createElement("button");
+    undo.textContent = "元に戻す";
+
+    undo.style.marginLeft = "10px";
+    undo.style.background = "white";
+    undo.style.color = "black";
+    undo.style.border = "none";
+    undo.style.borderRadius = "6px"
+    undo.style.padding = "4px 8px"
+    undo.style.cursor = "pointer";
+    undo.style.display = "flex";
+    undo.style.alignItems = "center";
+    undo.style.justifyContent = "center";
+
+    undo.onclick = function () {
+
+        let trash =
+            JSON.parse(localStorage.getItem("trashPlaylists") || "{}");
+
+        playlists[name] = trash[name];
+
+        delete trash[name];
+
+        localStorage.setItem("trashPlaylists", JSON.stringify(trash));
+
+        saveData();
+
+        setCurrentPlaylist(name);
+
+        updatePlaylistSelect();
+        render();
+
+        toast.remove();
+    };
+
+    toast.appendChild(undo);
+
+    styleToast(toast);
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.remove(), 5000);
+}
+
+function styleToast(toast) {
+    toast.style.position = "fixed";
+    toast.style.bottom = "20px";
+    toast.style.left = "50%";
+    toast.style.transform = "translateX(-50%)";
+    toast.style.background = "black";
+    toast.style.color = "white";
+    toast.style.padding = "10px 15px";
+    toast.style.borderRadius = "10px";
+    toast.style.display = "flex";
+    toast.style.alignItems = "center";
+    toast.style.whiteSpace = "nowrap";
+    toast.style.gap = "10px";
+    toast.style.zIndex = "999999";
+}
+
+</script>
+
+</body>
+</html>

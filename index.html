@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TVerプレイリスト</title>
+
+    <style>
+
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 32px;
+        }
+
+        .menuButton {
+            width: 100%;
+            padding: 22px;
+            margin-bottom: 25px;
+
+            border: none;
+            border-radius: 20x;
+
+            background: white;
+
+            font-size: 24px;
+            font-weight: bold;
+
+            cursor: pointer;
+
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+
+            transition: 0.2s;
+
+        }
+
+        .menuButton:active {
+            transform: scale(0.98);
+        }
+
+        @media (min-widgh: 700px) {
+
+            .container {
+                padding-top: 60px;
+            }
+
+            .menuButton:hover {
+                transform: translateY(-2px);
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>TVer プレイリスト</h1>
+
+        <button class="menuButton" onclick="location.href='create.html?new=1'">
+            新規作成・編集
+        </button>
+
+        <button class="menuButton" onclick="location.href='my.html'">
+            作成済みプレイリスト
+        </button>
+
+        <button class="menuButton" onclick="location.href='saved.html'">
+            共有プレイリスト
+        </button>
+
+    </div>
+
+</body>
+</html>
