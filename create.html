@@ -367,17 +367,24 @@ window.onload = function () {
     removeExpiredVideos();
     render();
 
-    const params =
-        new URLSearchParams(location.search);
+    const params = new URLSearchParams(location.search);
 
-    const sharedUrl =
-        params.get("url");
+    const sharedUrl = params.get("url");
     
     if (sharedUrl) {
         document.getElementById("url").value =
             decodeURIComponent(sharedUrl);
     }
 };
+
+document.getElementById("url").addEventListener("blur", async function () {
+    const url = this.value;
+    if (!url.includes("tver.jp")) return;
+    const title = await fetchTverTitle(url);
+    if (title) {
+        document.getElementById("title").value = title;
+    }
+});
 
 function save() {
 
@@ -1048,6 +1055,27 @@ function styleToast(toast) {
     toast.style.whiteSpace = "nowrap";
     toast.style.gap = "10px";
     toast.style.zIndex = "999999";
+}
+
+async function fetchTverTitle(url) {
+    try {
+        const res = await fetch(url);
+        const html = await res.text();
+
+        const match = html.match(
+            /<meta property="og:title" content="(.*?)"/
+        );
+
+        if (match) {
+            return match[1];
+        }
+
+        return "";
+    } catch (e) {
+        console.log("title fetch error", e);
+        return "";
+    }
+    
 }
 
 </script>
