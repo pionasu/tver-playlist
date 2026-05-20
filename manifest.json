@@ -1,7 +1,7 @@
 {
   "name": "TVer Playlist",
-  "short_name": "TVerList",
-  "start_url": "/tver-playlist/index.html",
+  "short_name": "TVerPlayList",
+  "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
