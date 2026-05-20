@@ -28,6 +28,7 @@
             display: flex;
             gap: 10px;
             align-items: center;
+            min-width: 0;
         }
 
         .thumb {
@@ -58,6 +59,8 @@
             display: flex;
             gap: 4px;
             margin-left: auto;
+            flex-shrink: 0;
+            white-space: nowrap;
         }
 
         .btns button {
@@ -130,24 +133,50 @@
 let playlists = {};
 let playlistOrder = [];
 
-window.onload = function () {
-
-    const saved = localStorage.getItem("tverPlaylists");
-    
-    if (saved) {
-        playlists = JSON.parse(saved);
-    }
-
-    const savedOrder =
-        localStorage.getItem("playlistOrder");
-
-    if (savedOrder) {
-        playlistOrder =
-            JSON.parse(savedOrder);
-    }
-
+window.onload = async function () {
+    await loadPlaylists();
     render();
 };
+
+async function loadPlaylists() {
+
+    playlists = {};
+
+    const playlistSnap = await getDocs(
+        collection(window.db, "playlists")
+    );
+
+    const videoSnap = await getDocs(
+        collection(window.db, "videos")
+    );
+
+    playlistSnap.forEach(docSnap => {
+
+        const data = docSnap.data();
+
+        if (
+            !data.name ||
+            data.name === "undefined"
+        ){
+            return;
+        }
+
+        playlists[data.name] = [];
+    });
+
+    videoSnap.forEach(docSnap => {
+
+        const video = docSnap.data();
+
+        if (!playlists[video.playlist]) {
+            playlists[video.playlist] = [];
+        }
+
+        playlists[video.playlist].push(video);
+    });
+
+    playlistOrder = Object.keys(playlists);
+}
 
 function render() {
 
@@ -195,19 +224,16 @@ function render() {
         div.innerHTML = `
             ${thumb}
 
-            <div style="flex:1">
+            <div style="flex:1; min-width:0;">
                 <div
                     style="
                         font-size:18px;
                         font-weight:bold;
-
+                        white-space:nowrap;
                         overflow:hidden;
                         text-overflow:ellipsis;
-                        white-space:nowrap;
-
-                        display:inline-block;
-                        max-width:180px;
-                        vertical-align:bottom;
+                        display:block;
+                        width:100%;
                     "
                 >
                     ${name}
@@ -297,33 +323,78 @@ function copyViewURL(name){
     alert("共有URLコピー完了");
 }
 
-function deletePlaylist(name) {
+async function deletePlaylist(name) {
+
     const ok = confirm(`「${name}」を削除しますか？`);
     if (!ok) return;
 
-    let trash = JSON.parse(localStorage.getItem("trashPlaylists") || "{}");
+    const playlistQ = query(
+        collection(window.db, "playlists"),
+        where("name", "==", name)
+    );
 
-    trash[name] = playlists[name];
-    localStorage.setItem("trashPlaylists", JSON.stringify(trash));
+    const playlistSnap = await getDocs(playlistQ);
 
-    delete playlists[name];
+    const videosQ = query(
+        collection(window.db, "videos"),
+        where("playlist", "==", name)
+    );
 
-    if (localStorage.getItem("lastPlaylist") === name) {
-        localStorage.removeItem("lastPlaylist");
+    const videosSnap = await getDocs(videosQ);
+
+    let deletedVideos = [];
+
+    videosSnap.forEach(docSnap => {
+        deletedVideos.push(docSnap.data());
+    });
+
+    for (const docSnap of playlistSnap.docs) {
+
+        await deleteDoc(
+            doc(window.db, "playlists", docSnap.id)
+        );
     }
 
-    localStorage.setItem("tverPlaylists", JSON.stringify(playlists));
+    for (const docSnap of videosSnap.docs) {
 
-    showUndoToast(name);
+        await deleteDoc(
+            doc(window.db, "videos", docSnap.id)
+        );
+    }
+
+    await loadPlaylists();
 
     render();
+
+    showUndoToast(name, deletedVideos);
 }
 
-function showUndoToast(name) {
+function showUndoToast(name, deletedVideos) {
 
     const toast = document.createElement("div");
 
-    toast.textContent = `「${name}」を削除しました`;
+    const wrapper = document.createElement("div");
+    wrapper.textContent = `「${name}」を削除しました`;
+    wrapper.style.flex = "1";
+    wrapper.style.minWidth = "0";
+
+    wrapper.style.display = "-webkit-box"
+    wrapper.style.webkitBoxOrient = "vertical";
+    wrapper.style.webkitLineClamp = "2"
+    wrapper.style.overflow = "hidden";
+    wrapper.style.wordBreak = "break-word";
+    wrapper.style.lineHeight = "1.4";
+
+    const text = document.createElement("span");
+    
+
+    text.style.display = "block";
+    text.style.minWidth = "0";
+    text.style.overflow = "hidden";
+    text.style.textOverflow = "ellipsis";
+    text.style.whiteSpace = "nowrap";
+
+    wrapper.appendChild(text);
 
     const undo = document.createElement("button");
     undo.textContent = "元に戻す";
@@ -332,29 +403,43 @@ function showUndoToast(name) {
     undo.style.background = "white";
     undo.style.color = "black";
     undo.style.border = "none";
-    undo.style.borderRadius = "6px"
-    undo.style.padding = "4px 8px"
+    undo.style.borderRadius = "6px";
+    undo.style.padding = "4px 8px";
     undo.style.cursor = "pointer";
-    undo.style.display = "flex";
-    undo.style.alignItems = "center";
-    undo.style.justifyContent = "center";
+    undo.style.whiteSpace = "nowrap";
+    undo.style.flexShrink = "0";
+    //undo.style.marginLeft = "auto";
 
-    undo.onclick = function () {
+    undo.onclick = async function () {
 
-        let trash =
-            JSON.parse(localStorage.getItem("trashPlaylists") || "{}");
+        await addDoc(
+            collection(window.db, "playlists"),
+            {
+                name: name,
+                createdAt: new Date()
+            }
+        );
 
-        playlists[name] = trash[name];
-        delete trash[name];
+        for (const video of deletedVideos) {
 
-        localStorage.setItem("trashPlaylists", JSON.stringify(trash));
-        localStorage.setItem("tverPlaylists", JSON.stringify(playlists));
+            await addDoc(
+                collection(window.db, "videos"),
+                {
+                    ...video,
+                    playlist: name,
+                    createdAt: new Date()
+                }
+            );
+        }
+
+        await loadPlaylists();
 
         render();
 
         toast.remove();
     };
 
+    toast.appendChild(wrapper);
     toast.appendChild(undo);
 
     toast.style.position = "fixed";
@@ -367,19 +452,54 @@ function showUndoToast(name) {
     toast.style.borderRadius = "10px";
     toast.style.display = "flex";
     toast.style.alignItems = "center";
-    toast.style.whiteSpace = "nowrap";
     toast.style.gap = "10px";
-    toast.style.zIndex = "999999";
+    toast.style.width = "90vw";
+    toast.style.maxWidth = "500px"
+    toast.style.boxSizing = "border-box";
 
     document.body.appendChild(toast);
-
-    console.log("toast出した");
 
     setTimeout(() => {
         toast.remove();
     }, 5000);
 }
 
+</script>
+
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
+  import { getFirestore, collection, getDocs, deleteDoc, doc, query, where, addDoc } 
+  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyCjIPTR43eqc9TaG9S9a13M8Nj7RcomuPk",
+    authDomain: "tver-playlist.firebaseapp.com",
+    projectId: "tver-playlist",
+    storageBucket: "tver-playlist.firebasestorage.app",
+    messagingSenderId: "474578557521",
+    appId: "1:474578557521:web:1e152de7d7edc9553ef670",
+    measurementId: "G-FKV7QE7KG7"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+
+  const db = getFirestore(app);
+  window.db = db;
+  window.collection = collection;
+  window.getDocs = getDocs;
+  window.deleteDoc = deleteDoc;
+  window.doc = doc;
+  window.query = query;
+  window.where = where;
+  window.addDoc = addDoc;
 </script>
 
 </body>

@@ -189,6 +189,11 @@
             display: none;
         }
 
+        #fileNameText {
+            font-size: 12px;
+            color: #666;
+        }
+
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -226,30 +231,12 @@
     <label>
         <input
             type="checkbox"
-            id="autoSaveToggle"
-            checked
-            onchange="toggleSaveButton()"
-        >
-        自動保存ON
-    </label>
-
-    <label>
-        <input
-            type="checkbox"
             id="autoDelete"
             checked
-            onchange="toggleSaveButton()"
+            onchange="saveAutoDeleteSetting()"
         >
         配信終了後自動削除
     </label>
-
-    <button 
-        id="saveButton"
-        onclick="savePlaylist()"
-        style="display: none;"
-    >
-        保存
-    </button>
 
 </div>
 
@@ -263,8 +250,15 @@
 
     <label class="fileBtn">
         ファイル選択
-        <input id="fileThumb" type="file" accept="image/*">
+        <input 
+            id="fileThumb" 
+            type="file" 
+            accept="image/*"
+            onchange="showFileName()"
+        >
     </label>
+
+    <span id="fileNameText"></span>
 
     <div class="dateArea">
 
@@ -276,8 +270,6 @@
             id="endDate"
             type="datetime-local"
         >
-
-        <label>
 
     </div>
 
@@ -296,24 +288,15 @@
 
 <script>
 
-let playlists = {};
-
 let currentPlaylist = "";
 
 let dragIndex = 0;
 
-let hasUnsavedChanges = false;
-
 let editingIndex = null;
 
-function saveData() {
-    localStorage.setItem("tverPlaylists", JSON.stringify(playlists));
-}
-
 function setCurrentPlaylist(name) {
-    const keys = Object.keys(playlists);
-    if (!name || !playlists[name]) {
-        currentPlaylist = keys[0] || "新規プレイリスト";
+    if (!name) {
+        currentPlaylist = "";
     } else {
         currentPlaylist = name;
     }
@@ -334,13 +317,13 @@ function getPlaylistFromURL() {
     }
 
     if (isNew) {
-        currentPlaylist = "新規プレイリスト";
-    } else if (urlPlaylist && playlists[urlPlaylist]) {
+        currentPlaylist = "";
+    } else if (urlPlaylist) {
         currentPlaylist = urlPlaylist;
-    } else if (lastPlaylist && playlists[lastPlaylist]) {
+    } else if (lastPlaylist) {
         currentPlaylist = lastPlaylist;
     } else {
-        currentPlaylist = "新規プレイリスト";
+        currentPlaylist = "";
     }
 
     const isFromURL = !!urlPlaylist;
@@ -350,66 +333,25 @@ function getPlaylistFromURL() {
     }
 
     localStorage.setItem("lastPlaylist", currentPlaylist);
+
+    return currentPlaylist;
 }
 
-window.onload = function () {
+window.onload = async function () {
 
-    const saved =
-        localStorage.getItem("tverPlaylists");
+    const urlPlaylist = getPlaylistFromURL();
 
-    if (saved) {
-        playlists = JSON.parse(saved);
-    }
-
-    if (!playlists["新規プレイリスト"]) {
-        playlists["新規プレイリスト"] = [];
-    }
-
-    const urlPlaylist =
-        getPlaylistFromURL();
-
-    const lastPlaylist =
-        localStorage.getItem("lastPlaylist");
-
-    if (urlPlaylist && playlists[urlPlaylist]) {
-        currentPlaylist = urlPlaylist;
-    } else     if (lastPlaylist && playlists[lastPlaylist]) {
-        currentPlaylist = lastPlaylist;
-
-    } else {
-        currentPlaylist = "新規プレイリスト";
+    if (!currentPlaylist) {
+        currentPlaylist = "";
     }
 
     localStorage.setItem("lastPlaylist", currentPlaylist)
 
-    toggleSaveButton();
-    updatePlaylistSelect();
-    removeExpiredVideos();
-    render();
+    await updatePlaylistSelect();
+    await removeExpiredVideos();
+    await render();
+    loadAutoDeleteSetting();
 };
-
-function save() {
-
-    localStorage.setItem(
-        "tverPlaylists",
-        JSON.stringify(playlists)
-    );
-}
-
-function autoSave() {
-
-    const enabled =
-        document.getElementById(
-            "autoSaveToggle"
-        ).checked;
-
-    if (enabled) {
-        save();
-        hasUnsavedChanges = false;
-    } else {
-        hasUnsavedChanges = true;
-    }
-}
 
 function formatDateTime(date) {
 
@@ -485,95 +427,104 @@ async function addVideo () {
 
     if (editingIndex !== null) {
 
-        playlists[currentPlaylist][editingIndex] = {
-            title,
-            url,
-            thumb,
-            endDate,
-            autoDelete
-        };
+        await updateDoc (
+            doc(window.db, "videos", editingIndex),
+            {
+                title,
+                url,
+                thumb,
+                endDate,
+                autoDelete,
+            }
+        );
 
         editingIndex = null;
 
-        document.querySelector(
-            "#editArea button"
-        ).textContent = "追加";
-
+        document.querySelector(".addButton").textContent = "追加";
     } else {
+        const q = query(
+            collection(window.db, "videos"),
+            where("playlist", "==", currentPlaylist),
+            orderBy("order")
+        );
+        
+        const snap = await getDocs(q);
 
-        playlists[currentPlaylist].push({
-            title,
-            url,
-            thumb,
-            endDate,
-            autoDelete
-        });
+        const order = snap.size;
+
+        await addDoc(
+            collection(window.db, "videos"),
+            {
+                playlist: currentPlaylist,
+                title,
+                url,
+                thumb,
+                endDate,
+                autoDelete,
+                order,
+                createdAt: new Date()
+            }
+        );
     }
 
-    document.getElementById(
-        "title"
-    ).value = "";
+    document.getElementById("title").value = "";
+    document.getElementById("url").value = "";
+    document.getElementById("thumb").value = "";
+    document.getElementById("endDate").value = "";
 
-    document.getElementById(
-        "url"
-    ).value = "";
-
-    document.getElementById(
-        "thumb"
-    ).value = "";
-
-    document.getElementById(
-        "endDate"
-    ).value = "";
-
-    autoSave();
+    document.getElementById("fileThumb").value = "";
+    document.getElementById("fileNameText").textContent = "";
 
     render();
 }
 
-function render() {
+async function render() {
 
-    const list =
-        document.getElementById("list");
+    const list = document.getElementById("list");
 
     list.innerHTML = "";
 
-    playlists[currentPlaylist]
-    .forEach((v, index) => {
+    if (!currentPlaylist) {
+        list.innerHTML = "";
+        return;
+    }
 
-        const div =
-            document.createElement("div");
+    const q = query(
+        collection(window.db, "videos"),
+        where("playlist", "==", currentPlaylist),
+        orderBy("order")
+    );
 
+    const snap = await getDocs(q);
+
+    const docs = snap.docs.sort((a, b) => {
+        return (a.data().order ?? 0) - (b.data().order ?? 0);
+    });
+
+    docs.forEach(docSnap => {
+        const v = docSnap.data();
+        const id = docSnap.id;
+
+        const div = document.createElement("div");
         div.className = "video";
+        div.dataset.id = id;
 
         const img = `
-            <div
-                class="thumbWrap"
-                onclick="play(${index})"
-            >
+            <div class="thumbWrap" onclick="play('${id}')">
                 ${
                     v.thumb
                     ? `<img class="thumb" src="${v.thumb}">`
                     : `<div class="thumb"></div>`
                 }
-
-                <div class="playIcon">
-                    ▶
-                </div>
+                <div class="playIcon">▶</div>
             </div>
         `;
 
         div.innerHTML = `
-
             ${img}
 
             <div class="info">
-
-                <b>
-                    ${index + 1}.
-                    ${v.title}
-                </b>
-
+                <b>${v.title}</b>
                 <br>
 
                 <div
@@ -588,25 +539,33 @@ function render() {
                     ${
                         v.endDate
                         ? `<div class="endDateText">
-                            配信終了日：
-                            ${formatDateTime(v.endDate)}
+                            配信終了日：${formatDateTime(v.endDate)}
                         </div>`
-
-                        : `<div clas="endDateText"></div>`
+                        : `<div class="endDateText"></div>`
                     } 
 
-                <div class="VideoButtons">
+                    <div class="VideoButtons">
 
-                    <button onclick="editVideo(${index})">
-                        編集
-                    </button>
+                        <button 
+                            onclick='editVideo(
+                                "${id}",
+                                ${JSON.stringify(v.title)},
+                                ${JSON.stringify(v.url)},
+                                ${JSON.stringify(v.thumb || "")},
+                                ${JSON.stringify(v.endDate || "")},
+                                ${v.autoDelete}
+                            )'
+                        >
+                            編集
+                        </button>
 
-                    <button 
-                        class="deleteBtn"
-                        onclick="removeVideo(${index})"
-                    >
-                        削除
-                    </button>
+                        <button 
+                            class="deleteBtn"
+                            onclick="removeVideoFirestore('${id}')"
+                        >
+                            削除
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -615,304 +574,396 @@ function render() {
     });
 }
 
-function play(index) {
+async function play(id) {
 
-    window.open(
-        playlists[currentPlaylist][index].url,
-        "_blank"
-    );
+    const docRef = doc(window.db, "videos", id);
+    const snap = await getDoc(docRef);
+
+    if (!snap.exists()) {
+        alert("動画が見つかりません");
+        return;
+    }
+
+    const data = snap.data();
+
+    if (data.url) {
+        window.open(data.url, "_blank");
+    }
 }
 
-function editVideo (index) {
-    const video = playlists[currentPlaylist][index];
-    const newTitle = 
-        prompt(
-            "タイトル",
-            video.title
-        );
+function editVideo (id, title, url, thumb, endDate, autoDelete) {
 
-    if (newTitle === null) return;
+    editingIndex = id;
 
-    const newThumb =
-        prompt(
-            "サムネURL",
-            video.thumb || ""
-        );
+    document.getElementById("title").value = title;
+    document.getElementById("url").value = url;
+    document.getElementById("thumb").value = thumb || "";
+    document.getElementById("endDate").value = endDate || "";
+    document.getElementById("autoDelete").checked = autoDelete || false;
 
-    if (newThumb === null) return;
-
-    const newEndDate =
-        prompt(
-            "配信終了日",
-            video.endDate || ""
-        );
-
-    if (newEndDate === null) return;
-
-    video.title = newTitle;
-    video.thumb = newThumb;
-    video.endDate = newEndDate;
-
-    autoSave();
-
-    render();
+    document.querySelector(".addButton").textContent = "更新";
 }
 
-function removeVideo(index) {
-
-    const video = playlists[currentPlaylist][index];
+async function removeVideoFirestore(id) {
 
     const ok = confirm("削除しますか？");
     if (!ok) return;
 
-    let trash = JSON.parse(localStorage.getItem("trashVideos") || "{}");
+    try {
+        const docRef = doc(window.db, "videos", id);
+        const snap = await getDoc(docRef);
 
-    const key = currentPlaylist;
+        if (!snap.exists()) {
+            alert("データが見つかりません");
+            return;
+        }
 
-    if (!trash[key]) trash[key] = [];
+        const video = snap.data();
 
-    trash[key].push({
-        video,
-        index
-    });
+        let trash = JSON.parse(localStorage.getItem("trashVideos") || "{}");
 
-    localStorage.setItem("trashVideos", JSON.stringify(trash));
+        const key = currentPlaylist;
 
-    playlists[currentPlaylist].splice(index, 1);
+        if (!trash[key]) trash[key] = [];
 
-    autoSave();
-    render();
+        trash[key].push({
+            id,
+            video
+        });
 
-    showUndoToastVideo(video, index);
+        localStorage.setItem("trashVideos", JSON.stringify(trash));
+
+        await deleteDoc(docRef);
+
+        render();
+
+        showUndoToastFirestore(id, video);
+    } catch (e) {
+        console.error(e);
+        alert("削除に失敗しました");
+    }  
 }
 
-function editVideo(index) {
+async function createPlaylist() {
 
-    const video =
-        playlists[currentPlaylist][index];
+    const name = prompt("プレイリスト名");
 
-    document.getElementById("title").value =
-        video.title;
-
-    document.getElementById("url").value =
-        video.url;
-
-    document.getElementById("thumb").value =
-        video.thumb || "";
-
-    document.getElementById("endDate").value =
-        video.endDate || "";
-
-    document.getElementById("autoDelete").checked =
-        video.autoDelete || false;
-
-    editingIndex = index;
-
-    document.querySelector(
-        "#editArea button"
-    ).textContent = "更新";
-}
-
-function savePlaylist() {
-
-    const ok =
-        confirm(
-            "この内容で保存しますか？"
-        );
-
-    if (!ok) return;
-
-    save();
-
-    hasUnsavedChanges = false;
-
-    alert("保存しました！");
-}
-
-function createPlaylist() {
-
-    const name =
-        prompt("プレイリスト名");
-
-    if (!name) return;
-
-    if (playlists[name]) {
-
-        alert(
-            "同じ名前があります"
-        );
-
+    if (
+        !name ||
+        !name.trim()
+    ) {
         return;
     }
 
-    playlists[name] = [];
+    const cleanName = name.trim();
 
-    currentPlaylist = name;
+    const q = query(
+        collection(window.db, "playlists"),
+        where("name", "==", cleanName)
+    );
+
+    const snap = await getDocs(q);
+
+    if (!snap.empty) {
+        alert("同じ名前があります");
+            return;
+    }    
+
+    await addDoc(
+        collection(window.db, "playlists"),
+        {
+            name: cleanName,
+            createdAt: new Date()
+        }
+    );
+
+    currentPlaylist = cleanName;
 
     localStorage.setItem("lastPlaylist", currentPlaylist);
 
-    autoSave();
-
     updatePlaylistSelect();
-
     render();
 }
 
-function renamePlaylist() {
+async function renamePlaylist() {
 
-    const newName =
-        prompt(
-            "新しいプレイリスト名",
+    if (!currentPlaylist) {
+
+        const newName =prompt("新しいプレイリスト名");
+
+        if (
+            !newName ||
+            !newName.trim()
+        ) {
+            return;
+        }
+
+        const cleanName = newName.trim();
+
+        const checkQ = query(
+            collection(window.db, "playlists"),
+            where("name", "==", cleanName)
+        );
+
+        const checkSnap = await getDocs(checkQ);
+
+        if (!checkSnap.empty && cleanName !== currentPlaylist) {
+            alert("同じ名前があります");
+            return;
+        }
+
+        await addDoc(
+            collection(window.db, "playlists"),
+            {
+                name: cleanName,
+                createdAt: new Date()
+            }
+        );
+
+        currentPlaylist = cleanName;
+
+        localStorage.setItem(
+            "lastPlaylist",
             currentPlaylist
         );
 
-    if (!newName) return;
-
-    if (playlists[newName]) {
-
-        alert(
-            "同じ名前があります"
-        );
+        await updatePlaylistSelect();
+        render();
 
         return;
     }
 
-    playlists[newName] =
-        playlists[currentPlaylist];
+    const newName = prompt(
+        "新しいプレイリスト名",
+        currentPlaylist
+    );
 
-    delete playlists[currentPlaylist];
+    if (
+        !newName ||
+        !newName.trim()
+    ) {
+        return;
+    }
 
-    currentPlaylist = newName;
+    const cleanName = newName.trim();
+
+    const checkQ = query(
+        collection(window.db, "playlists"),
+        where("name", "==", cleanName)
+    );
+
+    const checkSnap = await getDocs(checkQ);
+
+    if (!checkSnap.empty && cleanName !== currentPlaylist) {
+        alert("同じ名前があります");
+        return;
+    }
+
+    const q = query(
+        collection(window.db, "playlists"),
+        where("name", "==", currentPlaylist)
+    );
+
+    const snap = await getDocs(q);
+
+    for (const docSnap of snap.docs) {
+        await updateDoc(
+            doc(window.db, "playlists", docSnap.id),
+            {
+                name: cleanName
+            }
+        );
+    }
+
+    const videosQ = query(
+        collection(window.db, "videos"),
+        where("playlist", "==", currentPlaylist)
+    );
+
+    const videosSnap = await getDocs(videosQ);
+
+    for (const docSnap of videosSnap.docs) {
+        await updateDoc(
+            doc(window.db, "videos", docSnap.id),
+            {
+                playlist: cleanName
+            }
+        );
+    }
+
+    currentPlaylist = cleanName;
 
     localStorage.setItem("lastPlaylist", currentPlaylist);
 
-    autoSave();
-
-    updatePlaylistSelect();
-
+    await updatePlaylistSelect();
     render();
 }
 
-function deletePlaylist(name) {
+async function deletePlaylist(name) {
 
     const ok = confirm(`「${name}」を削除しますか？`);
     if (!ok) return;
 
-    let trash = JSON.parse(localStorage.getItem("trashPlaylists") || "{}");
-    trash[name] = playlists[name];
-    localStorage.setItem("trashPlaylists", JSON.stringify(trash));
+    const playlistQ = query(
+        collection(window.db, "playlists"),
+        where("name", "==", name)
+    );
 
-    delete playlists[name];
+    const playlistSnap = await getDocs(playlistQ);
 
-    saveData();
+    let playlistData = null;
 
-    if (currentPlaylist === name) {
-        currentPlaylist = Object.keys(playlists)[0] || "新規プレイリスト";
+    playlistSnap.forEach(docSnap => {
+        playlistData = docSnap.data();
+    });
+
+    const videosQ = query(
+        collection(window.db, "videos"),
+        where("playlist", "==", name)
+    );
+
+    const videosSnap = await getDocs(videosQ);
+
+    let deletedVideos = [];
+
+    videosSnap.forEach(docSnap => {
+        deletedVideos.push(docSnap.data());
+    });
+
+    for (const docSnap of playlistSnap.docs) {
+        await deleteDoc(
+            doc(window.db, "playlists", docSnap.id)
+        );
     }
 
-    setCurrentPlaylist(currentPlaylist);
+    for (const docSnap of videosSnap.docs) {
+        await deleteDoc(
+            doc(window.db, "videos", docSnap.id)
+        );
+    }
+
+    currentPlaylist = ""
 
     updatePlaylistSelect();
     render();
 
-    showUndoToastPlaylist(name);
+    showUndoToastPlaylist(
+        name,
+        playlistData,
+        deletedVideos
+    );
 }
 
-function updatePlaylistSelect() {
+async function updatePlaylistSelect() {
 
     const select =
-        document.getElementById(
-            "playlistSelect"
-        );
+        document.getElementById("playlistSelect");
 
     select.innerHTML = "";
 
-    if (!currentPlaylist) {
-        const firstOption = document.createElement("option");
+    const snap = await getDocs(
+        collection(window.db, "playlists")
+    );
 
-        firstOption.textContent = "新規プレイリスト作成";
+    snap.forEach(docSnap => {
+        const data = docSnap.data();
 
-        firstOption.disabled = true;
-        firstOption.selected = true;
+        if (
+            !data.name ||
+            data.name === "undefined"
+        ) {
+            return;
+        }
 
-        select.appendChild(firstOption);
-    }
-
-    for (const name in playlists) {
-
-        const option =
-            document.createElement(
-                "option"
-            );
-
-        option.value = name;
-
-        option.textContent = name;
+        const option = document.createElement("option");
+        option.value = data.name;
+        option.textContent = data.name;
 
         select.appendChild(option);
+    });
+
+    if (!currentPlaylist) {
+        const option = document.createElement("option");
+
+        option.value = "";
+        option.textContent = "新規プレイリスト";
+
+        option.selected = true;
+        select.appendChild(option);
+
+        return;
     }
 
-    if (currentPlaylist) {
-        select.value = currentPlaylist;
+    const exists = [...select.options].some(
+        option => option.value === currentPlaylist
+    );
+
+    if (!exists) {
+        currentPlaylist = "";
+        localStorage.removeItem("lastPlaylist");
+
+        const option = document.createElement("option");
+
+        option.value = "";
+        option.textContent = "新規プレイリスト";
+
+        option.selected = true;
+
+        select.appendChild(option);
+
+        return;
     }
+    select.value = currentPlaylist;
 }
 
 function changePlaylist() {
 
-    const enabled = document.getElementById("autoSaveToggle").checked;
-    if (!enabled && hasUnsavedChanges) {
-        const ok = confirm("保存していません。ページを移動しますか？");
-        if (!ok) return;
-    }
-
     currentPlaylist =
         document.getElementById("playlistSelect").value;
+
+    if (
+        !currentPlaylist ||
+        currentPlaylist === "undefined"
+    ) {
+        currentPlaylist = "";
+        localStorage.removeItem("lastPlaylist");
+        history.replaceState(null, "", "create.html");
+        render();
+        return;
+    }
     
     localStorage.setItem("lastPlaylist", currentPlaylist);
 
     history.replaceState(null, "", `create.html?id=${encodeURIComponent(currentPlaylist)}`);
 
     render();
+    loadAutoDeleteSetting();
 }
 
 function goHome() {
-    const enabled = document.getElementById("autoSaveToggle").checked;
-    if (
-        !enabled && hasUnsavedChanges
-    ) {
-        const ok = confirm("保存していません。ページを移動しますか？");
-
-        if (!ok) return;
-    }
 
     location.href = "index.html";
 }
 
-function toggleSaveButton() {
-    const enabled = document.getElementById("autoSaveToggle").checked;
-    const button = document.getElementById("saveButton");
-
-    if (enabled) {
-        button.style.display = "none";
-    } else {
-        button.style.display = "inline-block";
-    }
-
-}
-
-function removeExpiredVideos() {
+async function removeExpiredVideos() {
     const now = new Date();
-    for (const playlist in playlists) {
 
-        playlists[playlist] = 
-            playlists[playlist].filter(video => {
-                if (video.autoDelete && video.endDate) {
-                    return new Date(video.endDate) > now;
-                }
-                return true;
-            });
+    const snap = await getDocs(
+        collection(window.db, "videos")
+    );
+
+    for (const docSnap of snap.docs) {
+        const video = docSnap.data();
+        if (
+            video.autoDelete &&
+            video.endDate &&
+            new Date(video.endDate) <= now
+        ) {
+            await deleteDoc(
+                doc(window.db, "videos", docSnap.id)
+            );
+        }
     }
-    save();
 }
 
 new Sortable(
@@ -923,21 +974,28 @@ new Sortable(
         delayOnTouchOnly: true,
         touchStartThreshold: 5,
         forceFallback: true,
-        onEnd: function (evt) {
-            const moved =
-                playlists[currentPlaylist].splice(evt.oldIndex, 1)[0];
-            playlists[currentPlaylist].splice(evt.newIndex, 0, moved);
+        onEnd: async function () {
 
-            autoSave();
+            const items = document.querySelectorAll(".video");
+
+            for (let i = 0; i < items.length; i++) {
+                const id = items[i].dataset.id;
+                await updateDoc(
+                    doc(window.db, "videos", id),
+                    {
+                        order: i
+                    }
+                );
+            }
+
             render();
         }
     }
 );
 
-function showUndoToastVideo(video, index) {
+function showUndoToastFirestore(id, video) {
 
     const toast = document.createElement("div");
-
     toast.textContent = "動画を削除しました";
 
     const undo = document.createElement("button");
@@ -954,35 +1012,40 @@ function showUndoToastVideo(video, index) {
     undo.style.alignItems = "center";
     undo.style.justifyContent = "center";
 
-    undo.onclick = function () {
+    undo.onclick = async function () {
 
-        playlists[currentPlaylist].splice(index, 0, video);
+        try {
+            await addDoc(collection(window.db, "videos"), {
+                ...video,
+                playlist: currentPlaylist,
+                createdAt: new Date()
+            });
 
-        let trash =
-            JSON.parse(localStorage.getItem("trashVideos") || "{}");
+            let trash = JSON.parse(localStorage.getItem("trashVideos") || "{}");
 
-        if (trash[currentPlaylist]) {
-            trash[currentPlaylist].pop();
+            if (trash[currentPlaylist]) {
+                trash[currentPlaylist] = trash[currentPlaylist].filter(v => v.id !== id);
+            }
+
+            localStorage.setItem("trashVideos", JSON.stringify(trash));
+
+            render();
+            toast.remove();
+        } catch (e) {
+            console.error(e);
+            alert("復元に失敗しました");
         }
-
-        localStorage.setItem("trashVideos", JSON.stringify(trash));
-
-        autoSave();
-        render();
-
-        toast.remove();
     };
 
     toast.appendChild(undo);
 
     styleToast(toast);
-
     document.body.appendChild(toast);
 
     setTimeout(() => toast.remove(), 5000);
 }
 
-function showUndoToastPlaylist(name) {
+function showUndoToastPlaylist(name, playlistData, deletedVideos) {
 
     const toast = document.createElement("div");
     toast.textContent = "プレイリストを削除しました";
@@ -994,37 +1057,58 @@ function showUndoToastPlaylist(name) {
     undo.style.background = "white";
     undo.style.color = "black";
     undo.style.border = "none";
-    undo.style.borderRadius = "6px"
-    undo.style.padding = "4px 8px"
+    undo.style.borderRadius = "6px";
+    undo.style.padding = "4px 8px";
     undo.style.cursor = "pointer";
-    undo.style.display = "flex";
-    undo.style.alignItems = "center";
-    undo.style.justifyContent = "center";
 
-    undo.onclick = function () {
+    undo.onclick = async function () {
 
-        let trash =
-            JSON.parse(localStorage.getItem("trashPlaylists") || "{}");
+        try {
 
-        playlists[name] = trash[name];
+            await addDoc(
+                collection(window.db, "playlists"),
+                {
+                    name: name,
+                    createdAt: new Date()
+                }
+            );
 
-        delete trash[name];
+            for (const video of deletedVideos) {
 
-        localStorage.setItem("trashPlaylists", JSON.stringify(trash));
+                await addDoc(
+                    collection(window.db, "videos"),
+                    {
+                        ...video,
+                        playlist: name,
+                        createdAt: new Date()
+                    }
+                );
+            }
 
-        saveData();
+            currentPlaylist = name;
 
-        setCurrentPlaylist(name);
+            localStorage.setItem(
+                "lastPlaylist",
+                currentPlaylist
+            );
 
-        updatePlaylistSelect();
-        render();
+            await updatePlaylistSelect();
+            await render();
 
-        toast.remove();
+            toast.remove();
+
+        } catch (e) {
+
+            console.error(e);
+
+            alert("復元に失敗しました");
+        }
     };
 
     toast.appendChild(undo);
 
     styleToast(toast);
+
     document.body.appendChild(toast);
 
     setTimeout(() => toast.remove(), 5000);
@@ -1093,6 +1177,107 @@ function fileToBase64(file) {
         reader.readAsDataURL(file);
     });
 }
+
+function loadAutoDeleteSetting() {
+
+    const saved =
+        localStorage.getItem(
+            "autoDelete_" + currentPlaylist
+        );
+
+    const checkbox =
+        document.getElementById("autoDelete");
+
+    if (saved === null) {
+
+        checkbox.checked = true;
+
+    } else {
+
+        checkbox.checked = saved === "true";
+    }
+}
+
+function saveAutoDeleteSetting() {
+
+    const checked =
+        document.getElementById("autoDelete").checked;
+
+    localStorage.setItem(
+        "autoDelete_" + currentPlaylist,
+        checked
+    );
+}
+
+function showFileName() {
+
+    const input =
+        document.getElementById("fileThumb");
+
+    const text =
+        document.getElementById("fileNameText");
+
+    if (
+        input.files &&
+        input.files[0]
+    ) {
+
+        text.textContent =
+            input.files[0].name;
+
+    } else {
+
+        text.textContent = "";
+    }
+}
+
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
+
+import {
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    query,
+    where,
+    deleteDoc,
+    doc,
+    getDoc,
+    updateDoc,
+    orderBy
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCjIPTR43eqc9TaG9S9a13M8Nj7RcomuPk",
+    authDomain: "tver-playlist.firebaseapp.com",
+    projectId: "tver-playlist",
+    storageBucket: "tver-playlist.firebasestorage.app",
+    messagingSenderId: "474578557521",
+    appId: "1:474578557521:web:1e152de7d7edc9553ef670",
+    measurementId: "G-FKV7QE7KG7"
+};
+
+const app = initializeApp(firebaseConfig);
+
+getAnalytics(app);
+
+window.db = getFirestore(app);
+
+window.collection = collection;
+window.addDoc = addDoc;
+window.getDocs = getDocs;
+window.query = query;
+window.where = where;
+window.deleteDoc = deleteDoc;
+window.doc = doc;
+window.getDoc = getDoc;
+window.updateDoc = updateDoc;
+window.orderBy = orderBy;
 
 </script>
 

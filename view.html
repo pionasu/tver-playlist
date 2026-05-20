@@ -198,18 +198,9 @@ const params =
 const playlistName =
     params.get("id");
 
-const playlists =
-    JSON.parse(
-        localStorage.getItem("tverPlaylists")
-        || "{}"
-    );
-
-const videos =
-    playlists[playlistName]
-    || [];
-
 document.getElementById("playlistTitle")
-    .textContent = playlistName || "プレイリスト";
+    .textContent =
+    playlistName || "プレイリスト";
 
 const videoList =
     document.getElementById("videoList");
@@ -217,64 +208,94 @@ const videoList =
 const empty =
     document.getElementById("empty");
 
-if(videos.length === 0){
+window.onload = async function () {
 
-    empty.style.display = "block";
+    while (!window.db) {
+        await new Promise(r => setTimeout(r, 100));
+    }
+
+    const q = query(
+        collection(window.db, "videos"),
+        where("playlist", "==", playlistName)
+    );
+
+    const snap = await getDocs(q);
+
+    const videos = [];
+
+    snap.forEach(docSnap => {
+        videos.push(docSnap.data());
+    });
+
+    render(videos);
+};
+
+function render(videos){
+
+    videoList.innerHTML = "";
+
+    if(videos.length === 0){
+
+        empty.style.display = "block";
+        return;
+    }
+
+    empty.style.display = "none";
+
+    videos.forEach(video => {
+
+        const div =
+            document.createElement("div");
+
+        div.className = "video";
+
+        div.onclick = function(){
+
+            if(video.url){
+
+                window.open(
+                    video.url,
+                    "_blank"
+                );
+            }
+        };
+
+        div.innerHTML = `
+
+            <div class="thumbWrap">
+
+                <img
+                    src="${video.thumb || ''}"
+                    class="thumb"
+                >
+
+                <div class="playIcon">
+                    ▶
+                </div>
+            </div>
+
+            <div class="info">
+
+                <div class="videoTitle">
+                    ${video.title || "タイトルなし"}
+                </div>
+
+                <div class="expire">
+                    ${
+                        video.endDate
+                        ? `配信終了まで ${getRemainingTime(video.endDate)}`
+                        : ""
+                    }
+                </div>
+
+            </div>
+
+        `;
+
+        videoList.appendChild(div);
+
+    });
 }
-
-videos.forEach(video => {
-
-    const div =
-        document.createElement("div");
-
-    div.className = "video";
-
-    div.onclick = function(){
-
-        if(video.url){
-
-            window.open(
-                video.url,
-                "_blank"
-            );
-        }
-    };
-
-    div.innerHTML = `
-
-        <div class="thumbWrap">
-
-            <img
-                src="${video.thumb || ''}"
-                class="thumb"
-            >
-
-            <div class="playIcon">
-                ▶
-            </div>
-        </div>
-
-        <div class="info">
-
-            <div class="videoTitle">
-                ${video.title || "タイトルなし"}
-            </div>
-
-            <div class="expire">
-                ${
-                    video.endDate
-                    ? `配信終了まで ${getRemainingTime(video.endDate)}`
-                    : ""
-                }
-            </div>
-
-        </div>
-
-    `;
-
-    videoList.appendChild(div);
-
-});
 
 function getRemainingTime(date) {
 
@@ -314,6 +335,38 @@ function getRemainingTime(date) {
     return `あと${minutes}分`;
 }
 
+</script>
+
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
+  import { getFirestore, collection, getDocs, query, where } 
+  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyCjIPTR43eqc9TaG9S9a13M8Nj7RcomuPk",
+    authDomain: "tver-playlist.firebaseapp.com",
+    projectId: "tver-playlist",
+    storageBucket: "tver-playlist.firebasestorage.app",
+    messagingSenderId: "474578557521",
+    appId: "1:474578557521:web:1e152de7d7edc9553ef670",
+    measurementId: "G-FKV7QE7KG7"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getFirestore(app);
+  window.db = db;
+  window.collection = collection;
+  window.getDocs = getDocs;
+  window.query = query;
+  window.where = where;
 </script>
 
 </body>
