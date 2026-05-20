@@ -216,7 +216,8 @@ window.onload = async function () {
 
     const q = query(
         collection(window.db, "videos"),
-        where("playlist", "==", playlistName)
+        where("playlist", "==", playlistName),
+        orderBy("order")
     );
 
     const snap = await getDocs(q);
@@ -341,7 +342,13 @@ function getRemainingTime(date) {
   // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
-  import { getFirestore, collection, getDocs, query, where } 
+  import { getFirestore, 
+           collection, 
+           getDocs, 
+           query, 
+           where,
+           orderBy
+         } 
   from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
@@ -367,6 +374,7 @@ function getRemainingTime(date) {
   window.getDocs = getDocs;
   window.query = query;
   window.where = where;
+  window.orderBy = orderBy;
 </script>
 
 </body>
