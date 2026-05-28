@@ -224,10 +224,21 @@ window.onload = async function () {
 
     const videos = [];
 
-    snap.forEach(docSnap => {
-        videos.push(docSnap.data());
-    });
+    for (const docSnap of snap.docs) {
+        const video = docSnap.data();
 
+        if (
+            video.autoDelete &&
+            video.endDate &&
+            new Date(video.endDate) <= new Date()
+        ) {
+            await deleteDoc(
+                doc(window.db, "videos", docSnap.id)
+            );
+            continue;
+        }
+        videos.push(video);
+    }
     render(videos);
 };
 
@@ -347,7 +358,9 @@ function getRemainingTime(date) {
            getDocs, 
            query, 
            where,
-           orderBy
+           orderBy,
+           deleteDoc,
+           doc
          } 
   from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use
@@ -375,6 +388,8 @@ function getRemainingTime(date) {
   window.query = query;
   window.where = where;
   window.orderBy = orderBy;
+  window.deleteDoc = deleteDoc;
+  window.doc = doc;
 </script>
 
 </body>
