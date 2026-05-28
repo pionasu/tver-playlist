@@ -219,6 +219,42 @@
             color:black;
         }
 
+        .taglist{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 6px;
+        }
+
+        .videoTag{
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .videoTag.nasu{
+            background: #4DA3FF;
+        }
+
+        .videoTag.ukisho{
+            background: #FF9F43;
+        }
+
+        .videoTag.sakuma{
+            background: #A66CFF;
+        }
+
+        .videoTag.fukada{
+            background: #4CAF50;
+        }
+
+        .videoTag.ryuga{
+            background: #FFD600;
+            color: black;
+        }
+
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -513,17 +549,6 @@ async function addVideo () {
 
         editingIndex = null;
 
-        selectedTags = tags || [];
-        document.querySelectorAll(".memberTag")
-        .forEach(btn => {
-            const tag = btn.dataset.tag;
-            if(selectedTags.includes(tag)){
-                btn.classList.add("active");
-            }else{
-                btn.classList.remove("active");
-            }
-        });
-
         document.querySelector(".addButton").textContent = "追加";
     } else {
         const q = query(
@@ -562,7 +587,7 @@ async function addVideo () {
 
     selectedTags = [];
 
-    document.querySelectorAll(".memberTags")
+    document.querySelectorAll(".memberTag")
     .forEach(btn => {
         btn.classList.remove("active");
     });
@@ -612,11 +637,30 @@ async function render() {
             </div>
         `;
 
+        const tagHTML = (v.tags || []).map(tag => {
+            let className = "";
+
+            if(tag === "那須雄登") className = "nasu";
+            if(tag === "浮所飛貴") className = "ukisho";
+            if(tag === "作間龍斗") className = "sakuma";
+            if(tag === "深田竜生") className = "fukada";
+            if(tag === "佐藤龍我") className = "ryuga";
+
+            return `
+                <div class="videoTag ${className}">
+                    ${tag}
+                </div>
+            `;
+        }).join("");
+
         div.innerHTML = `
             ${img}
 
             <div class="info">
                 <b>${v.title}</b>
+                <div class="tagList">
+                    ${tagHTML}
+                </div>
                 <br>
 
                 <div
