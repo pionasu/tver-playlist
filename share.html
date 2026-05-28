@@ -156,6 +156,41 @@ body{
 .videoTag.fukada{ background:#4CAF50; }
 .videoTag.ryuga{ background:#FFD600; }
 
+.filterArea{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:15px;
+    justify-content:center;
+}
+
+.filterBtn{
+    background:white;
+    border:2px solid;
+    font-weight:bold;
+    padding:3px 8px;
+    font-size:11px;
+    border-radius:999px;
+    cursor:pointer;
+}
+
+.filterBtn.active{
+    color:white;
+}
+
+/* メンカラ */
+.filterBtn.nasu{ color:#4DA3FF; border-color:#4DA3FF; }
+.filterBtn.ukisho{ color:#FF9F43; border-color:#FF9F43; }
+.filterBtn.sakuma{ color:#A66CFF; border-color:#A66CFF; }
+.filterBtn.fukada{ color:#4CAF50; border-color:#4CAF50; }
+.filterBtn.ryuga{ color:#FFD600; border-color:#FFD600; }
+
+.filterBtn.nasu.active{ background:#4DA3FF; border-color:#4DA3FF; }
+.filterBtn.ukisho.active{ background:#FF9F43; }
+.filterBtn.sakuma.active{ background:#A66CFF; }
+.filterBtn.fukada.active{ background:#4CAF50; }
+.filterBtn.ryuga.active{ background:#FFD600; }
+
 </style>
 </head>
 
@@ -170,6 +205,30 @@ body{
             class="playlistTitle"
         >
         </div>
+
+    </div>
+
+    <div class="filterArea">
+
+        <button class="filterBtn nasu" data-tag="那須">
+            那須雄登
+        </button>
+
+        <button class="filterBtn ukisho" data-tag="浮所">
+            浮所飛貴
+        </button>
+
+        <button class="filterBtn sakuma" data-tag="作間">
+            作間龍斗
+        </button>
+
+        <button class="filterBtn fukada" data-tag="深田">
+            深田竜生
+        </button>
+
+        <button class="filterBtn ryuga" data-tag="龍我">
+            佐藤龍我
+        </button>
 
     </div>
 
@@ -192,6 +251,15 @@ const params =
 
 const playlistName =
     params.get("id");
+
+let activeFilters = [
+    "那須",
+    "浮所",
+    "作間",
+    "深田",
+    "龍我"
+];
+let allVideos = [];
 
 document.getElementById("playlistTitle")
     .textContent =
@@ -232,6 +300,7 @@ window.onload = async function () {
         videos.push(video);
     }
     render(videos);
+    setupFilters();
 };
 
 function render(videos){
@@ -245,6 +314,8 @@ function render(videos){
     }
 
     empty.style.display = "none";
+
+    allVideos = videos;
 
     videos.forEach(video => {
 
@@ -355,6 +426,41 @@ function getRemainingTime(date) {
     }
 
     return `あと${minutes}分`;
+}
+
+function setupFilters(){
+
+    document.querySelectorAll(".filterBtn")
+    .forEach(btn => {
+
+        const tag = btn.dataset.tag;
+
+        btn.classList.add("active");
+
+        btn.onclick = function(){
+
+            if(activeFilters.includes(tag)){
+
+                activeFilters = 
+                    activeFilters.filter(t => t !== tag);
+                
+                btn.classList.remove("active");
+            }else{
+                activeFilters.push(tag);
+                btn.classList.add("active");
+            }
+
+            const filtered =
+                allVideos.filter(video => {
+                    const tags = video.tags || [];
+                    return tags.some(t =>
+                        activeFilters.includes(t)
+                    );
+                });
+
+            render(filtered);
+        };
+    });
 }
 
 </script>
