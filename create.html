@@ -198,23 +198,23 @@
             color:white;
         }
 
-        .memberTag[data-tag="那須雄登"].active{
+        .memberTag[data-tag="那須"].active{
             background:#4DA3FF;
         }
 
-        .memberTag[data-tag="浮所飛貴"].active{
+        .memberTag[data-tag="浮所"].active{
             background:#FF9F43;
         }
 
-        .memberTag[data-tag="作間龍斗"].active{
+        .memberTag[data-tag="作間"].active{
             background:#A66CFF;
         }
 
-        .memberTag[data-tag="深田竜生"].active{
+        .memberTag[data-tag="深田"].active{
             background:#4CAF50;
         }
 
-        .memberTag[data-tag="佐藤龍我"].active{
+        .memberTag[data-tag="龍我"].active{
             background:#FFD600;
             color:black;
         }
@@ -352,24 +352,24 @@
 
     <div class="memberTags">
 
-    <button type="button" class="memberTag" data-tag="浮所飛貴">
-    浮所飛貴
+    <button type="button" class="memberTag" data-tag="浮所">
+    浮所
     </button>
 
-    <button type="button" class="memberTag" data-tag="那須雄登">
-    那須雄登
+    <button type="button" class="memberTag" data-tag="那須">
+    那須
     </button>
 
-    <button type="button" class="memberTag" data-tag="作間龍斗">
-    作間龍斗
+    <button type="button" class="memberTag" data-tag="作間">
+    作間
     </button>
 
-    <button type="button" class="memberTag" data-tag="深田竜生">
-    深田竜生
+    <button type="button" class="memberTag" data-tag="深田">
+    深田
     </button>
 
-    <button type="button" class="memberTag" data-tag="佐藤龍我">
-    佐藤龍我
+    <button type="button" class="memberTag" data-tag="龍我">
+    龍我
     </button>
 
     </div>
@@ -642,11 +642,11 @@ async function render() {
         const tagHTML = (v.tags || []).map(tag => {
             let className = "";
 
-            if(tag === "那須雄登") className = "nasu";
-            if(tag === "浮所飛貴") className = "ukisho";
-            if(tag === "作間龍斗") className = "sakuma";
-            if(tag === "深田竜生") className = "fukada";
-            if(tag === "佐藤龍我") className = "ryuga";
+            if(tag === "那須") className = "nasu";
+            if(tag === "浮所") className = "ukisho";
+            if(tag === "作間") className = "sakuma";
+            if(tag === "深田") className = "fukada";
+            if(tag === "龍我") className = "ryuga";
 
             return `
                 <div class="videoTag ${className}">
