@@ -40,7 +40,7 @@ body{
 }
 
 .playlistTitle{
-    font-size:28px;
+    font-size:22px;
     font-weight:bold;
 
     overflow:hidden;
@@ -152,6 +152,52 @@ body{
     border-radius:50%;
 
     pointer-events:none;
+}
+
+.tagList{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+    margin-top:6px;
+}
+
+.videoTag{
+    display:inline-block;
+
+    width:fit-content;
+
+    white-space:nowrap;
+
+    font-size:11px;
+
+    padding:3px 8px;
+
+    border-radius:999px;
+
+    color:white;
+
+    font-weight:bold;
+}
+
+.videoTag.nasu{
+    background:#4DA3FF;
+}
+
+.videoTag.ukisho{
+    background:#FF9F43;
+}
+
+.videoTag.sakuma{
+    background:#A66CFF;
+}
+
+.videoTag.fukada{
+    background:#4CAF50;
+}
+
+.videoTag.ryuga{
+    background:#FFD600;
+    color:black;
 }
 
 </style>
@@ -292,6 +338,10 @@ function render(videos){
                     ${video.title || "タイトルなし"}
                 </div>
 
+                <div class="tagList">
+                    ${tagHTML}
+                </div>
+
                 <div class="expire">
                     ${
                         video.endDate
@@ -307,6 +357,22 @@ function render(videos){
         videoList.appendChild(div);
 
     });
+
+    const tagHTML = (v.tags || []).map(tag => {
+        let className = "";
+
+        if(tag === "那須") className = "nasu";
+        if(tag === "浮所") className = "ukisho";
+        if(tag === "作間") className = "sakuma";
+        if(tag === "深田") className = "fukada";
+        if(tag === "龍我") className = "ryuga";
+
+        return `
+            <div class="videoTag ${className}">
+                ${tag}
+            </div>
+        `;
+    }).join("");
 }
 
 function getRemainingTime(date) {
