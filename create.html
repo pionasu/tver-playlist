@@ -200,69 +200,68 @@
             color: #666;
         }
 
-        .memberTag{
+        .memberTag.active{
+            color:white;
+        }
+
+        .memberTag{
             background: white;
-            border: 2px solid currentColor;
+            border: 2px solid;
             font-weight: bold;
             padding: 3px 8px;
-            cursor: pointer;
         }
 
-        .memberTag.active{
-            color: white;
-        }
-
-        .memberTag[data-tag="那須"]{
+        .memberTag[data-tag="那須"]{
             color:#4DA3FF;
             border-color: #4DA3FF;
         }
 
-        .memberTag[data-tag="浮所"]{
+        .memberTag[data-tag="浮所"]{
             color:#FF9F43;
             border-color: #FF9F43;
         }
 
-        .memberTag[data-tag="作間"]{
+        .memberTag[data-tag="作間"]{
             color:#A66CFF;
             border-color: #A66CFF;
         }
 
-        .memberTag[data-tag="深田"]{
+        .memberTag[data-tag="深田"]{
             color:#4CAF50;
             border-color: #4CAF50;
         }
 
-        .memberTag[data-tag="龍我"]{
+        .memberTag[data-tag="龍我"]{
             color:#FFD600;
             border-color: #FFD600;
         }
 
-        .memberTag[data-tag="那須"].active{
+        .memberTag[data-tag="那須"].active{
             background:#4DA3FF;
             color: white;
         }
 
-        .memberTag[data-tag="浮所"].active{
+        .memberTag[data-tag="浮所"].active{
             background:#FF9F43;
             color: white;
         }
 
-        .memberTag[data-tag="作間"].active{
+        .memberTag[data-tag="作間"].active{
             background:#A66CFF;
             color: white;
         }
 
-        .memberTag[data-tag="深田"].active{
+        .memberTag[data-tag="深田"].active{
             background:#4CAF50;
             color: white;
         }
 
-        .memberTag[data-tag="龍我"].active{
+        .memberTag[data-tag="龍我"].active{
             background:#FFD600;
             color:white;
         }
 
-        .tagList{
+        .tagList{
             display: flex;
             flex-wrap: wrap;
             gap: 5px;
@@ -270,7 +269,7 @@
             margin-bottom: 4px;
         }
 
-        .videoTag{
+        .videoTag{
             display: inline-block;
             width: fit-content;
             font-size: 11px;
@@ -280,23 +279,23 @@
             font-weight: bold;
         }
 
-        .videoTag.nasu{
+        .videoTag.nasu{
             background: #4DA3FF;
         }
 
-        .videoTag.ukisho{
+        .videoTag.ukisho{
             background: #FF9F43;
         }
 
-        .videoTag.sakuma{
+        .videoTag.sakuma{
             background: #A66CFF;
         }
 
-        .videoTag.fukada{
+        .videoTag.fukada{
             background: #4CAF50;
         }
 
-        .videoTag.ryuga{
+        .videoTag.ryuga{
             background: #FFD600;
         }
 
