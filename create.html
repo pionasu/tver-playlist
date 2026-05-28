@@ -513,6 +513,17 @@ async function addVideo () {
 
         editingIndex = null;
 
+        selectedTags = tags || [];
+        document.querySelectorAll(".memberTag")
+        .forEach(btn => {
+            const tag = btn.dataset.tag;
+            if(selectedTags.includes(tag)){
+                btn.classList.add("active");
+            }else{
+                btn.classList.remove("active");
+            }
+        });
+
         document.querySelector(".addButton").textContent = "追加";
     } else {
         const q = query(
@@ -634,7 +645,8 @@ async function render() {
                                 ${JSON.stringify(v.url)},
                                 ${JSON.stringify(v.thumb || "")},
                                 ${JSON.stringify(v.endDate || "")},
-                                ${v.autoDelete}
+                                ${v.autoDelete},
+                                ${JSON.stringify(v.tags || [])}
                             )'
                         >
                             編集
@@ -672,7 +684,7 @@ async function play(id) {
     }
 }
 
-function editVideo (id, title, url, thumb, endDate, autoDelete) {
+function editVideo (id, title, url, thumb, endDate, autoDelete, tags) {
 
     editingIndex = id;
 
