@@ -50,19 +50,12 @@ body{
 
 .video{
     display:flex;
-    gap:8px;
+    gap:6px;
     align-items: center;
-
     background:white;
-
-    padding:10px;
-    margin-bottom:12px;
-
+    padding:6px 10px;
+    margin-bottom:8px;
     border-radius:14px;
-
-    cursor:pointer;
-
-    transition:0.2s;
 }
 
 .video:active{
@@ -72,14 +65,10 @@ body{
 .thumb{
     width:110px;
     height:62px;
-
     object-fit:cover;
-
     border-radius:10px;
-
+    display: block;
     background:#ddd;
-
-    flex-shrink:0;
 }
 
 .info{
@@ -104,8 +93,7 @@ body{
 }
 
 .expire{
-    margin-top:8px;
-
+    margin-top:4px;
     font-size:13px;
     color:#ff4d4d;
 }
@@ -119,11 +107,12 @@ body{
 
 .thumbWrap{
     position:relative;
-
-    width:140px;
-    height:78px;
-
+    width:110px;
+    height:62px;
     flex-shrink:0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .playIcon{
@@ -155,8 +144,8 @@ body{
 .tagList{
     display:flex;
     flex-wrap:wrap;
-    gap:5px;
-    margin-top:6px;
+    gap:4px;
+    margin-top:4px;
 }
 
 .filterArea{
