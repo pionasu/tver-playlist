@@ -194,6 +194,31 @@
             color: #666;
         }
 
+        .memberTag.active{
+            color:white;
+        }
+
+        .memberTag[data-tag="那須雄登"].active{
+            background:#4DA3FF;
+        }
+
+        .memberTag[data-tag="浮所飛貴"].active{
+            background:#FF9F43;
+        }
+
+        .memberTag[data-tag="作間龍斗"].active{
+            background:#A66CFF;
+        }
+
+        .memberTag[data-tag="深田竜生"].active{
+            background:#4CAF50;
+        }
+
+        .memberTag[data-tag="佐藤龍我"].active{
+            background:#FFD600;
+            color:black;
+        }
+
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -287,6 +312,30 @@
         共有
     </button>
 
+    <div class="memberTags">
+
+    <button type="button" class="memberTag" data-tag="浮所飛貴">
+    浮所飛貴
+    </button>
+
+    <button type="button" class="memberTag" data-tag="那須雄登">
+    那須雄登
+    </button>
+
+    <button type="button" class="memberTag" data-tag="作間龍斗">
+    作間龍斗
+    </button>
+
+    <button type="button" class="memberTag" data-tag="深田竜生">
+    深田竜生
+    </button>
+
+    <button type="button" class="memberTag" data-tag="佐藤龍我">
+    佐藤龍我
+    </button>
+
+    </div>
+
 </div>
 
 <hr>
@@ -300,6 +349,22 @@ let currentPlaylist = "";
 let dragIndex = 0;
 
 let editingIndex = null;
+
+let selectedTags = [];
+
+document.querySelectorAll(".memberTag").forEach(btn => {
+    btn.onclick = () => {
+        const tag = btn.dataset.tag;
+        if(selectedTags.includes(tag)){
+            selectedTags =
+                selectedTags.filter(t => t !== tag);
+            btn.classList.remove("active");
+        }else{
+            selectedTags.push(tag);
+            btn.classList.add("active");
+        }
+    };
+});
 
 function setCurrentPlaylist(name) {
     if (!name) {
@@ -442,6 +507,7 @@ async function addVideo () {
                 thumb,
                 endDate,
                 autoDelete,
+                tags: [...selectedTags]
             }
         );
 
@@ -469,6 +535,7 @@ async function addVideo () {
                 endDate,
                 autoDelete,
                 order,
+                tags: [...selectedTags],
                 createdAt: new Date()
             }
         );
@@ -481,6 +548,13 @@ async function addVideo () {
 
     document.getElementById("fileThumb").value = "";
     document.getElementById("fileNameText").textContent = "";
+
+    selectedTags = [];
+
+    document.querySelectorAll(".memberTags")
+    .forEach(btn => {
+        btn.classList.remove("active");
+    });
 
     render();
 }
