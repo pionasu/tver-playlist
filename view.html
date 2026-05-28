@@ -197,6 +197,27 @@ body{
     background:#FFD600;
 }
 
+.filterArea{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 18px;
+}
+
+.filterBtn{
+    border: none;
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+}
+
+.filterBtn.active{
+    outline: 2px solid black;
+}
+
 </style>
 </head>
 
@@ -218,6 +239,30 @@ body{
             class="playlistTitle"
         >
         </div>
+
+    </div>
+
+    <div class="filterArea">
+
+        <button class="filterBtn nasu" data-tag="那須">
+            那須雄登
+        </button>
+
+        <button class="filterBtn ukisho" data-tag="浮所">
+            浮所飛貴
+        </button>
+
+        <button class="filterBtn sakuma" data-tag="作間">
+            作間龍斗
+        </button>
+
+        <button class="filterBtn fukada" data-tag="深田">
+            深田竜生
+        </button>
+
+        <button class="filterBtn ryuga" data-tag="佐藤">
+            佐藤龍我
+        </button>
 
     </div>
 
@@ -251,6 +296,9 @@ const videoList =
 const empty =
     document.getElementById("empty");
 
+let activeFilter = null
+let allVideos = [];
+
 window.onload = async function () {
 
     while (!window.db) {
@@ -282,7 +330,9 @@ window.onload = async function () {
         }
         videos.push(video);
     }
-    render(videos);
+    allVideos = videos;
+    render(allVideos);
+    setupFilters();
 };
 
 function render(videos){
@@ -408,6 +458,46 @@ function getRemainingTime(date) {
     }
 
     return `あと${minutes}分`;
+}
+
+function setupFilters(){
+
+    document.querySelectorAll(".filterBtn")
+    .forEach(btn => {
+
+        btn.onclick = function(){
+
+            const tag = btn.dataset.tag;
+
+            if(activeFilter === tag){
+
+                activeFilter = null;
+
+                document
+                    .querySelectorAll(".filterBtn")
+                    .forEach(b => b.classList.remove("active"));
+
+                render(allVideos);
+
+                return;
+            }
+
+            activeFilter = tag;
+
+            document
+                .querySelectorAll(".filterBtn")
+                .forEach(b => b.classList.remove("active"));
+
+            btn.classList.add("active");
+
+            const filtered =
+                allVideos.filter(video =>
+                    (video.tags || []).includes(tag)
+                );
+
+            render(filtered);
+        };
+    });
 }
 
 </script>
