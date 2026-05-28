@@ -318,7 +318,7 @@ function render(videos){
             }
         };
 
-        const tagHTML = (v.tags || []).map(tag => {
+        const tagHTML = (video.tags || []).map(tag => {
             let className = "";
 
             if(tag === "那須") className = "nasu";
