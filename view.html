@@ -318,6 +318,22 @@ function render(videos){
             }
         };
 
+        const tagHTML = (v.tags || []).map(tag => {
+            let className = "";
+
+            if(tag === "那須") className = "nasu";
+            if(tag === "浮所") className = "ukisho";
+            if(tag === "作間") className = "sakuma";
+            if(tag === "深田") className = "fukada";
+            if(tag === "龍我") className = "ryuga";
+
+            return `
+                <div class="videoTag ${className}">
+                    ${tag}
+                </div>
+            `;
+        }).join("");
+
         div.innerHTML = `
 
             <div class="thumbWrap">
@@ -357,22 +373,6 @@ function render(videos){
         videoList.appendChild(div);
 
     });
-
-    const tagHTML = (v.tags || []).map(tag => {
-        let className = "";
-
-        if(tag === "那須") className = "nasu";
-        if(tag === "浮所") className = "ukisho";
-        if(tag === "作間") className = "sakuma";
-        if(tag === "深田") className = "fukada";
-        if(tag === "龍我") className = "ryuga";
-
-        return `
-            <div class="videoTag ${className}">
-                ${tag}
-            </div>
-        `;
-    }).join("");
 }
 
 function getRemainingTime(date) {
