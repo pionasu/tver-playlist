@@ -280,6 +280,13 @@
         追加
     </button>
 
+    <button
+        class="addButton"
+        onclick="copyShareUrl()"
+    >
+        共有
+    </button>
+
 </div>
 
 <hr>
@@ -602,6 +609,12 @@ function editVideo (id, title, url, thumb, endDate, autoDelete) {
     document.getElementById("autoDelete").checked = autoDelete || false;
 
     document.querySelector(".addButton").textContent = "更新";
+
+    document.getElementById("editArea")
+        .scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
 }
 
 async function removeVideoFirestore(id) {
@@ -1229,6 +1242,18 @@ function showFileName() {
 
         text.textContent = "";
     }
+}
+
+function copyShareUrl() {
+    if (!currentPlaylist) {
+        alert("プレイリストを選択してください");
+        return;
+    }
+
+    const shareUrl =
+        `${location.origin}/share.html?id=${encodeURIComponent(currentPlaylist)}`;
+    navigator.clipboard.writeText(shareUrl);
+    alert("共有URLをコピーしました");
 }
 
 </script>
