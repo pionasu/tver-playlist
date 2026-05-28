@@ -54,6 +54,7 @@
             width: 120px;
             height: 70px;
             flex-shrink: 0;
+            cursor: pointer;
         }
 
         .playIcon {
@@ -161,6 +162,11 @@
             display: flex;
             gap: 4px;
             margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .VideoButtons button{
+            white-space: nowrap;
         }
 
         .endDateText {
@@ -255,11 +261,12 @@
             color:white;
         }
 
-        .taglist{
+        .tagList{
             display: flex;
             flex-wrap: wrap;
             gap: 5px;
             margin-top: 6px;
+            margin-bottom: 4px;
         }
 
         .videoTag{
@@ -664,14 +671,18 @@ async function render() {
         div.dataset.id = id;
 
         const img = `
-            <div class="thumbWrap" onclick="play('${id}')">
+            <a 
+                class="thumbWrap"
+                href="${v.url}"
+                target="_blank"
+            >
                 ${
                     v.thumb
                     ? `<img class="thumb" src="${v.thumb}">`
                     : `<div class="thumb"></div>`
                 }
                 <div class="playIcon">▶</div>
-            </div>
+            </a>
         `;
 
         const tagHTML = (v.tags || []).map(tag => {
@@ -698,7 +709,6 @@ async function render() {
                 <div class="tagList">
                     ${tagHTML}
                 </div>
-                <br>
 
                 <div
                     style="
