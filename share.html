@@ -137,6 +137,31 @@ body{
     pointer-events:none;
 }
 
+.tagList{
+    display:flex;
+    flex-wrap:wrap;
+    gap:4px;
+    margin-top:4px;
+}
+
+/* タグ本体（viewと完全統一） */
+.videoTag{
+    display:inline-block;
+    width:fit-content;
+    font-size:9px;
+    padding:3px 8px;
+    border-radius:999px;
+    color:white;
+    font-weight:bold;
+}
+
+/* メンカラ */
+.videoTag.nasu{ background:#4DA3FF; }
+.videoTag.ukisho{ background:#FF9F43; }
+.videoTag.sakuma{ background:#A66CFF; }
+.videoTag.fukada{ background:#4CAF50; }
+.videoTag.ryuga{ background:#FFD600; }
+
 </style>
 </head>
 
@@ -263,6 +288,24 @@ function render(videos){
 
                 <div class="videoTitle">
                     ${video.title || "タイトルなし"}
+                </div>
+
+                <div class="tagList">
+                    ${(video.tags || []).map(tag => {
+                        let className = "";
+
+                        if(tag === "那須") className = "nasu";
+                        if(tag === "浮所") className = "ukisho";
+                        if(tag === "作間") className = "sakuma";
+                        if(tag === "深田") className = "fukada";
+                        if(tag === "龍我") className = "ryuga";
+
+                        return `
+                            <div class="videoTag ${className}">
+                                ${tag}
+                            </div>
+                        `;
+                    }).join("")}
                 </div>
 
                 <div class="expire">
