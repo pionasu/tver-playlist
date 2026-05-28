@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>プレイリスト</title>
+
+<style>
+
+body{
+    margin:0;
+    font-family:sans-serif;
+    background:#f5f5f5;
+}
+
+.container{
+    max-width:700px;
+    margin:auto;
+    padding:20px;
+}
+
+.header{
+    margin-bottom:25px;
+}
+
+.playlistTitle{
+    font-size:28px;
+    font-weight:bold;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    text-align: center;
+}
+
+.video{
+    display:flex;
+    gap:12px;
+
+    background:white;
+
+    padding:10px;
+    margin-bottom:12px;
+
+    border-radius:14px;
+
+    cursor:pointer;
+
+    transition:0.2s;
+}
+
+.video:active{
+    transform:scale(0.98);
+}
+
+.thumb{
+    width:140px;
+    height:78px;
+
+    object-fit:cover;
+
+    border-radius:10px;
+
+    background:#ddd;
+
+    flex-shrink:0;
+}
+
+.info{
+    flex:1;
+
+    min-width:0;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+}
+
+.videoTitle{
+    font-size:16px;
+    font-weight:bold;
+
+    line-height:1.4;
+
+    display:-webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+
+    overflow:hidden;
+}
+
+.expire{
+    margin-top:8px;
+
+    font-size:13px;
+    color:#ff4d4d;
+}
+
+.empty{
+    text-align:center;
+    color:#777;
+    margin-top:80px;
+    font-size:15px;
+}
+
+.thumbWrap{
+    position:relative;
+
+    width:140px;
+    height:78px;
+
+    flex-shrink:0;
+}
+
+.playIcon{
+    position:absolute;
+
+    top:50%;
+    left:50%;
+
+    transform:translate(-50%, -50%);
+
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size:18px;
+
+    color:white;
+
+    background:rgba(0,0,0,0.5);
+
+    border-radius:50%;
+
+    pointer-events:none;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+
+        <div
+            id="playlistTitle"
+            class="playlistTitle"
+        >
+        </div>
+
+    </div>
+
+    <div id="videoList"></div>
+
+    <div
+        id="empty"
+        class="empty"
+        style="display:none;"
+    >
+        動画がありません
+    </div>
+
+</div>
+
+<script>
+
+const params =
+    new URLSearchParams(location.search);
+
+const playlistName =
+    params.get("id");
+
+document.getElementById("playlistTitle")
+    .textContent =
+    playlistName || "プレイリスト";
+
+const videoList =
+    document.getElementById("videoList");
+
+const empty =
+    document.getElementById("empty");
+
+window.onload = async function () {
+
+    while (!window.db) {
+        await new Promise(r => setTimeout(r, 100));
+    }
+
+    const q = query(
+        collection(window.db, "videos"),
+        where("playlist", "==", playlistName),
+        orderBy("order")
+    );
+
+    const snap = await getDocs(q);
+
+    const videos = [];
+
+    for (const docSnap of snap.docs) {
+        const video = docSnap.data();
+
+        if (
+            video.autoDelete &&
+            video.endDate &&
+            new Date(video.endDate) <= new Date()
+        ) {
+            continue;
+        }
+        videos.push(video);
+    }
+    render(videos);
+};
+
+function render(videos){
+
+    videoList.innerHTML = "";
+
+    if(videos.length === 0){
+
+        empty.style.display = "block";
+        return;
+    }
+
+    empty.style.display = "none";
+
+    videos.forEach(video => {
+
+        const div =
+            document.createElement("div");
+
+        div.className = "video";
+
+        div.onclick = function(){
+
+            if(video.url){
+
+                window.open(
+                    video.url,
+                    "_blank"
+                );
+            }
+        };
+
+        div.innerHTML = `
+
+            <div class="thumbWrap">
+
+                <img
+                    src="${video.thumb || ''}"
+                    class="thumb"
+                >
+
+                <div class="playIcon">
+                    ▶
+                </div>
+            </div>
+
+            <div class="info">
+
+                <div class="videoTitle">
+                    ${video.title || "タイトルなし"}
+                </div>
+
+                <div class="expire">
+                    ${
+                        video.endDate
+                        ? `配信終了まで ${getRemainingTime(video.endDate)}`
+                        : ""
+                    }
+                </div>
+
+            </div>
+
+        `;
+
+        videoList.appendChild(div);
+
+    });
+}
+
+function getRemainingTime(date) {
+
+    if (!date) return "";
+
+    const now = new Date();
+
+    const end = new Date(date);
+
+    const diff = end - now;
+
+    if (diff <= 0) {
+        return "配信終了";
+    }
+
+    const minutes =
+        Math.floor(
+            diff / (1000 * 60)
+        );
+
+    const hours =
+        Math.floor(
+            diff / (1000 * 60 * 60)
+        );
+
+    const days =
+        Math.floor(hours / 24);
+
+    if (days > 0) {
+        return `あと${days}日`;
+    }
+
+    if (hours >= 1) {
+        return `あと${hours}時間`;
+    }
+
+    return `あと${minutes}分`;
+}
+
+</script>
+
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
+  import { getFirestore, 
+           collection, 
+           getDocs, 
+           query, 
+           where,
+           orderBy
+         } 
+  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyCjIPTR43eqc9TaG9S9a13M8Nj7RcomuPk",
+    authDomain: "tver-playlist.firebaseapp.com",
+    projectId: "tver-playlist",
+    storageBucket: "tver-playlist.firebasestorage.app",
+    messagingSenderId: "474578557521",
+    appId: "1:474578557521:web:1e152de7d7edc9553ef670",
+    measurementId: "G-FKV7QE7KG7"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getFirestore(app);
+  window.db = db;
+  window.collection = collection;
+  window.getDocs = getDocs;
+  window.query = query;
+  window.where = where;
+  window.orderBy = orderBy;
+</script>
+
+</body>
+</html>
