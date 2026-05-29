@@ -8,7 +8,7 @@
     content="width=device-width, initial-scale=1.0"
 >
 
-<title>プレイリスト</title>
+<title>ACEes Tverプレイリスト</title>
 
 <style>
 
@@ -501,13 +501,16 @@ function updateFilters(){
 
 function sharePlaylist(){
     const url = window.location.href;
+    const title = playlistName || "プレイリスト";
+    const text = `${title}`;
     if(navigator.share){
         navigator.share({
-            title: playlistName || "プレイリスト",
+            title: title,
+            text: text,
             url: url
         });
     }else{
-        navigator.clipboard.writeText(url);
+        navigator.clipboard.writeText(`${text}\n${url}`);
         alert("共有URLコピー完了")
     }
 }
