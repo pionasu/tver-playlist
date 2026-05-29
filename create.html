@@ -861,16 +861,15 @@ async function createPlaylist() {
             return;
     }    
 
-    await addDoc(
+    const docRef = await addDoc(
         collection(window.db, "playlists"),
         {
-            id: playlistId,
             name: cleanName,
             createdAt: new Date()
         }
     );
 
-    currentPlaylist = cleanName;
+    currentPlaylist = docRef.id;
 
     localStorage.setItem("lastPlaylist", currentPlaylist);
 
@@ -895,7 +894,7 @@ async function renamePlaylist() {
 
         const checkQ = query(
             collection(window.db, "playlists"),
-            where("name", "==", cleanName)
+            where("id", "==", currentPlaylist)
         );
 
         const checkSnap = await getDocs(checkQ);
@@ -999,7 +998,7 @@ async function deletePlaylist(name) {
 
     const playlistQ = query(
         collection(window.db, "playlists"),
-        where("name", "==", name)
+        where("id", "==", name)
     );
 
     const playlistSnap = await getDocs(playlistQ);
@@ -1069,7 +1068,7 @@ async function updatePlaylistSelect() {
         }
 
         const option = document.createElement("option");
-        option.value = data.name;
+        option.value = data.id;
         option.textContent = data.name;
 
         select.appendChild(option);
