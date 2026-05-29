@@ -8,7 +8,7 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
 >
 
-<title>ACEes Tverプレイリスト</title>
+<title>プレイリスト</title>
 
 <style>
 
@@ -288,6 +288,7 @@ let allVideos = [];
 document.getElementById("playlistTitle")
     .textContent =
     playlistName || "プレイリスト";
+document.title = playlistName || "プレイリスト";
 
 const videoList =
     document.getElementById("videoList");
