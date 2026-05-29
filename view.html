@@ -156,6 +156,11 @@ body{
     gap: 6px;
     margin-bottom: 15px;
     justify-content: center;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .filterBtn{
@@ -166,6 +171,7 @@ body{
     font-size:11px;
     border-radius:999px;
     cursor:pointer;
+    transition: 0.15s;
 }
 
 /* 非選択時の色 */
@@ -196,6 +202,7 @@ body{
 /* ON状態（createと完全一致） */
 .filterBtn.active{
     color:white;
+    transform: scale(0.95);
 }
 
 .filterBtn.nasu.active{
@@ -312,6 +319,8 @@ body{
     </div>
 
 </div>
+
+<hr>
 
 <script>
 
