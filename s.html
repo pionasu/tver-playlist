@@ -1,0 +1,33 @@
+<script type="module">
+import {
+  getFirestore,
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+const db = window.db;
+
+window.onload = async () => {
+
+    while (!window.db) {
+        await new Promise(r => setTimeout(r, 100));
+    }
+
+    const db = window.db;
+
+    const shortId = location.pathname.split("/").pop();
+
+    const snap = await getDoc(
+        doc(db, "shortUrls", shortId)
+    );
+
+    if (!snap.exists()) {
+        document.body.innerHTML = "URLが存在しません";
+        return;
+    }
+
+    const playlistId = snap.data().playlistId;
+
+    location.href = `/share.html?id=${playlistId}`;
+};
+</script>

@@ -273,9 +273,6 @@ body{
 const params =
     new URLSearchParams(location.search);
 
-const playlistName =
-    params.get("id");
-
 let activeFilters = [
     "那須",
     "浮所",
@@ -283,12 +280,8 @@ let activeFilters = [
     "深田",
     "龍我"
 ];
-let allVideos = [];
 
-document.getElementById("playlistTitle")
-    .textContent =
-    playlistName || "プレイリスト";
-document.title = playlistName || "プレイリスト";
+let allVideos = [];
 
 const videoList =
     document.getElementById("videoList");
@@ -296,23 +289,41 @@ const videoList =
 const empty =
     document.getElementById("empty");
 
+let playlistName = "プレイリスト"
+
 window.onload = async function () {
 
     while (!window.db) {
         await new Promise(r => setTimeout(r, 100));
     }
 
+    const playlistId = new URLSearchParams(location.search).get("id");
+
+    const snap = await getDocs(
+        query(
+            collection(window.db, "playlists"),
+            where("id", "==", playlistId)
+        )
+    );
+
+    snap.forEach(doc => {
+        playlistName = doc.data().name;
+    });
+
+    document.getElementById("playlistTitle").textContent = playlistName;
+    document.title = playlistName;
+
     const q = query(
         collection(window.db, "videos"),
-        where("playlist", "==", playlistName),
+        where("playlistId", "==", playlistId),
         orderBy("order")
     );
 
-    const snap = await getDocs(q);
+    const snap2 = await getDocs(q);
 
     const videos = [];
 
-    for (const docSnap of snap.docs) {
+    for (const docSnap of snap2.docs) {
         const video = docSnap.data();
 
         if (
@@ -500,18 +511,40 @@ function updateFilters(){
     render(filtered);
 }
 
-function sharePlaylist(){
-    const url = window.location.href;
-    const title = playlistName || "プレイリスト";
+async function sharePlaylist(){
+    const playlistId = new URLSearchParams(location.search).get("id");
+
+    const q = query(
+        collection(db, "shortUrls"),
+        where("playlistId", "==", playlistId)
+    );
+
+    const snap = await getDoc(q);
+
+    let shortId;
+
+    if (!snap.empty) {
+        shortId = snap.docs[0].id;
+    } else {
+        shortId = Math.random().toString(36).substring(2, 8);
+
+        await setDoc(doc(db, "shortUrls", shortId), {
+            playlistId,
+            createdAt: new Date()
+        });
+    }
+
+    const shortUrl = `https://tver-playlist.vercel.app/s/${shortId}`;
+    const title = document.getElementById("playlistTitle").textContent;
     const text = `${title}`;
     if(navigator.share){
         navigator.share({
             title: title,
             text: text,
-            url: url
+            url: shortUrl
         });
     }else{
-        navigator.clipboard.writeText(`${text}\n${url}`);
+        navigator.clipboard.writeText(`${text}\n${shortUrl}`);
         alert("共有URLコピー完了")
     }
 }
@@ -527,7 +560,10 @@ function sharePlaylist(){
            getDocs, 
            query, 
            where,
-           orderBy
+           orderBy,
+           setDoc,
+           doc,
+           getDoc
          } 
   from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use

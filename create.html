@@ -839,12 +839,11 @@ async function removeVideoFirestore(id) {
 
 async function createPlaylist() {
 
+    const playlistId = crypto.randomUUID();
+
     const name = prompt("プレイリスト名");
 
-    if (
-        !name ||
-        !name.trim()
-    ) {
+    if (!name || !name.trim()) {
         return;
     }
 
@@ -865,6 +864,7 @@ async function createPlaylist() {
     await addDoc(
         collection(window.db, "playlists"),
         {
+            id: playlistId,
             name: cleanName,
             createdAt: new Date()
         }
@@ -1210,7 +1210,7 @@ function showUndoToastFirestore(id, video) {
         try {
             await addDoc(collection(window.db, "videos"), {
                 ...video,
-                playlist: currentPlaylist,
+                playlistId: currentPlaylistId,
                 createdAt: new Date()
             });
 
