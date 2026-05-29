@@ -600,7 +600,7 @@ async function addVideo () {
     } else {
         const q = query(
             collection(window.db, "videos"),
-            where("playlist", "==", currentPlaylist),
+            where("playlistId", "==", currentPlaylist),
             orderBy("order")
         );
         
@@ -611,7 +611,7 @@ async function addVideo () {
         await addDoc(
             collection(window.db, "videos"),
             {
-                playlist: currentPlaylist,
+                playlistId: currentPlaylist,
                 title,
                 url,
                 thumb,
@@ -655,7 +655,7 @@ async function render() {
 
     const q = query(
         collection(window.db, "videos"),
-        where("playlist", "==", currentPlaylist),
+        where("playlistId", "==", currentPlaylist),
         orderBy("order")
     );
 
@@ -970,7 +970,7 @@ async function renamePlaylist() {
 
     const videosQ = query(
         collection(window.db, "videos"),
-        where("playlist", "==", currentPlaylist)
+        where("playlistId", "==", currentPlaylist)
     );
 
     const videosSnap = await getDocs(videosQ);
@@ -979,7 +979,7 @@ async function renamePlaylist() {
         await updateDoc(
             doc(window.db, "videos", docSnap.id),
             {
-                playlist: cleanName
+                playlistId: cleanName
             }
         );
     }
@@ -1012,7 +1012,7 @@ async function deletePlaylist(name) {
 
     const videosQ = query(
         collection(window.db, "videos"),
-        where("playlist", "==", name)
+        where("playlistId", "==", name)
     );
 
     const videosSnap = await getDocs(videosQ);
@@ -1210,7 +1210,7 @@ function showUndoToastFirestore(id, video) {
         try {
             await addDoc(collection(window.db, "videos"), {
                 ...video,
-                playlistId: currentPlaylistId,
+                playlistId: currentPlaylist,
                 createdAt: new Date()
             });
 
