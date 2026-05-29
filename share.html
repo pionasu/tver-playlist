@@ -26,6 +26,25 @@ body{
 
 .header{
     margin-bottom:25px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.shareBtn{
+    border: none;
+    background: #4DA3FF;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.shareBtn:active{
+    transform: scale(0.95);
 }
 
 .playlistTitle{
@@ -191,6 +210,8 @@ body{
 .filterBtn.fukada.active{ background:#4CAF50; border-color:#4CAF50;}
 .filterBtn.ryuga.active{ background:#FFD600;  border-color:#FFD600;}
 
+
+
 </style>
 </head>
 
@@ -205,6 +226,9 @@ body{
             class="playlistTitle"
         >
         </div>
+        <button class="shareBtn" onclick="sharePlaylist()">
+            共有
+        </button>
 
     </div>
 
@@ -473,6 +497,19 @@ function updateFilters(){
     });
 
     render(filtered);
+}
+
+function sharePlaylist(){
+    const url = window.location.href;
+    if(navigator.share){
+        navigator.share({
+            title: playlistName || "プレイリスト",
+            url: url
+        });
+    }else{
+        navigator.clipboard.writeText(url);
+        alert("共有URLコピー完了")
+    }
 }
 
 </script>
