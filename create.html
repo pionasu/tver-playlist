@@ -871,8 +871,11 @@ async function createPlaylist() {
 
     localStorage.setItem("lastPlaylist", currentPlaylist);
 
-    updatePlaylistSelect();
-    render();
+    await updatePlaylistSelect();
+
+    document.getElementById("playlistSelect").value = currentPlaylist;
+
+    await render();
 }
 
 async function renamePlaylist() {
@@ -880,9 +883,12 @@ async function renamePlaylist() {
     if (!currentPlaylist) {
 
         const currentOption = document.getElementById("playlistSelect").selectedOptions[0];
-        const currentName = currentOption?.textContent || "";
+        const currentName = 
+            document.getElementById("playlistSelect")
+            .selectedOptions[0]
+            ?.textContent || "";
 
-        const newName =prompt("新しいプレイリスト名", currentName);
+        const newName = prompt("新しいプレイリスト名", currentName);
 
         if (
             !newName ||
@@ -912,8 +918,6 @@ async function renamePlaylist() {
                 createdAt: new Date()
             }
         );
-
-        currentPlaylist = cleanName;
 
         localStorage.setItem(
             "lastPlaylist",
@@ -952,21 +956,13 @@ async function renamePlaylist() {
         return;
     }
 
-    const q = query(
-        collection(window.db, "playlists"),
-        where("id", "==", currentPlaylist)
+    const playlistRef = doc(window.db, "playlists", currentPlaylist);
+    await updateDoc(
+        playlistRef,
+        {
+            name: cleanName
+        }
     );
-
-    const snap = await getDocs(q);
-
-    for (const docSnap of snap.docs) {
-        await updateDoc(
-            doc(window.db, "playlists", docSnap.id),
-            {
-                name: cleanName
-            }
-        );
-    }
 
     const videosQ = query(
         collection(window.db, "videos"),
@@ -984,21 +980,25 @@ async function renamePlaylist() {
 
 async function deletePlaylist(name) {
 
-    const ok = confirm(`「${name}」を削除しますか？`);
+    const playlistName = 
+        document.getElementById("playlistSelect")
+        .selectedOptions[0]
+        ?.textContent || "";
+
+    const ok = confirm(`「${playlistName}」を削除しますか？`);
     if (!ok) return;
 
-    const playlistQ = query(
-        collection(window.db, "playlists"),
-        where("id", "==", name)
-    );
+    const playlistRef =
+        doc(window.db, "playlists", name);
 
-    const playlistSnap = await getDocs(playlistQ);
+    const playlistSnap =
+        await getDoc(playlistRef);
 
     let playlistData = null;
 
-    playlistSnap.forEach(docSnap => {
-        playlistData = docSnap.data();
-    });
+    if (playlistSnap.exists()) {
+        playlistData = playlistSnap.data();
+    }
 
     const videosQ = query(
         collection(window.db, "videos"),
@@ -1013,11 +1013,7 @@ async function deletePlaylist(name) {
         deletedVideos.push(docSnap.data());
     });
 
-    for (const docSnap of playlistSnap.docs) {
-        await deleteDoc(
-            doc(window.db, "playlists", docSnap.id)
-        );
-    }
+    await deleteDoc(playlistRef);
 
     for (const docSnap of videosSnap.docs) {
         await deleteDoc(
@@ -1059,7 +1055,7 @@ async function updatePlaylistSelect() {
         }
 
         const option = document.createElement("option");
-        option.value = data.id;
+        option.value = docSnap.id;
         option.textContent = data.name;
 
         select.appendChild(option);
@@ -1267,8 +1263,6 @@ function showUndoToastPlaylist(name, playlistData, deletedVideos) {
                     }
                 );
             }
-
-            currentPlaylist = name;
 
             localStorage.setItem(
                 "lastPlaylist",
