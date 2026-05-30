@@ -908,7 +908,7 @@ async function renamePlaylist() {
             return;
         }
 
-        await addDoc(
+        const docRef = await addDoc(
             collection(window.db, "playlists"),
             {
                 name: cleanName,
@@ -916,13 +916,19 @@ async function renamePlaylist() {
             }
         );
 
-        localStorage.setItem(
-            "lastPlaylist",
-            currentPlaylist
+        currentPlaylist = docRef.id;
+
+        localStorage.setItem("lastPlaylist", currentPlaylist);
+
+        history.replaceState(
+            null,
+            "",
+            `create.html?id=${encodeURIComponent(currentPlaylist)}`
         );
 
         await updatePlaylistSelect();
-        render();
+        document.getElementById("playlistSelect").value = currentPlaylist;
+        await render();
 
         return;
     }
