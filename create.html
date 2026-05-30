@@ -1055,7 +1055,10 @@ async function deletePlaylist(name) {
 function showUndoToastPlaylist() {
 
     const toast = document.createElement("div");
-    toast.textContent = "プレイリストを削除しました";
+
+    const text = document.createElement("div");
+    text.className = "toastText";
+    text.innerHTML = "プレイリストを削除しました";
 
     const undo = document.createElement("button");
     undo.textContent = "元に戻す";
@@ -1070,10 +1073,8 @@ function showUndoToastPlaylist() {
 
         const { id, playlist, videos } = undoStackPlaylist;
 
-        // ①プレイリスト復元（同じIDで戻す）
         await setDoc(doc(window.db, "playlists", id), playlist);
 
-        // ②動画も復元
         for (const v of videos) {
             await setDoc(doc(window.db, "videos", v.id), v.data);
         }
@@ -1083,26 +1084,65 @@ function showUndoToastPlaylist() {
         currentPlaylist = id;
         localStorage.setItem("lastPlaylist", id);
 
-        history.replaceState(
-            null,
-            "",
-            `create.html?id=${id}`
-        );
-
         await updatePlaylistSelect();
         await render();
 
         toast.remove();
     };
 
+    toast.appendChild(text);
     toast.appendChild(undo);
-    styleToast(toast);
+
+    styleUndoToast(toast, "playlist");
     document.body.appendChild(toast);
 
     setTimeout(() => {
         undoStackPlaylist = null;
         toast.remove();
     }, 5000);
+}
+
+function styleUndoToast(toast, type = "video") {
+
+    toast.style.position = "fixed";
+    toast.style.bottom = "20px";
+    toast.style.left = "50%";
+    toast.style.transform = "translateX(-50%)";
+
+    toast.style.background = "#fff";
+    toast.style.color = "#111";
+    toast.style.padding = "12px 14px";
+    toast.style.borderRadius = "12px";
+    toast.style.display = "flex";
+    toast.style.alignItems = "center";
+    toast.style.justifyContent = "space-between";
+    toast.style.minWidth = "280px";
+    toast.style.maxWidth = "90vw";
+    toast.style.boxShadow = "0 10px 25px rgba(0,0,0,0.15)";
+    toast.style.zIndex = "999999";
+    toast.style.gap = "12px";
+
+    const textColor = toast.querySelector(".toastText");
+    if (textColor) {
+        textColor.style.fontSize = "14px";
+    }
+
+    const btn = toast.querySelector("button");
+    if (btn) {
+        btn.style.padding = "6px 12px";
+        btn.style.borderRadius = "8px";
+        btn.style.border = "none";
+        btn.style.cursor = "pointer";
+        btn.style.fontWeight = "bold";
+
+        if (type === "playlist") {
+            btn.style.background = "#22c55e"; // 緑
+            btn.style.color = "white";
+        } else {
+            btn.style.background = "#3b82f6"; // 青
+            btn.style.color = "white";
+        }
+    }
 }
 
 async function updatePlaylistSelect() {
@@ -1247,7 +1287,10 @@ new Sortable(
 function showUndoToastFirestore() {
 
     const toast = document.createElement("div");
-    toast.textContent = "動画を削除しました";
+
+    const text = document.createElement("div");
+    text.className = "toastText";
+    text.innerHTML = "動画を削除しました";
 
     const undo = document.createElement("button");
     undo.textContent = "元に戻す";
@@ -1262,23 +1305,18 @@ function showUndoToastFirestore() {
 
         const { id, data } = undoStack;
 
-        try {
-            // ★同じIDで復元（重要）
-            await setDoc(doc(window.db, "videos", id), undoStack.data);
+        await setDoc(doc(window.db, "videos", id), data);
 
-            undoStack = null;
+        undoStack = null;
 
-            await render();
-            toast.remove();
-
-        } catch (e) {
-            console.error(e);
-            alert("復元に失敗しました");
-        }
+        await render();
+        toast.remove();
     };
 
+    toast.appendChild(text);
     toast.appendChild(undo);
-    styleToast(toast);
+
+    styleUndoToast(toast, "video");
     document.body.appendChild(toast);
 
     setTimeout(() => {
