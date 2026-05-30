@@ -498,26 +498,18 @@ window.onload = async function () {
 
     const urlPlaylist = getPlaylistFromURL();
 
-    if (!currentPlaylist) {
+    if (currentPlaylist && !currentPlaylist.startsWith("temp_")) {
+        localStorage.setItem("lastPlaylist", currentPlaylist);
+    }
+
+    if (!currentPlaylist || currentPlaylist === "undefined") {
         const last = localStorage.getItem("lastPlaylist");
         if (last) {
             currentPlaylist = last;
         }else{
-            const docRef = await addDoc(
-                collection(window.db, "playlists"),
-                {
-                    name: "新規プレイリスト",
-                    createdAt: new Date(),
-                    isTemp: true
-                }
-            );
-            currentPlaylist = docRef.id;
+            currentPlaylist = "temp_" + Date.now();
             localStorage.setItem("lastPlaylist", currentPlaylist),
-            history.replaceState(
-                null,
-                "",
-                `create.html?id=${encodeURIComponent(currentPlaylist)}`
-            );
+            history.replaceState(null, "", "create.html");
         }
     }    
     await updatePlaylistSelect();
@@ -583,6 +575,28 @@ function getRemainingTime(date) {
 }
 
 async function addVideo () {
+
+    if (currentPlaylist.startsWith("temp_")) {
+
+        const docRef = await addDoc(
+            collection(window.db, "playlists"),
+            {
+                name: "新規プレイリスト",
+                createdAt: new Date(),
+                isTemp: true
+            }
+        );
+
+        currentPlaylist = docRef.id;
+
+        localStorage.setItem("lastPlaylist", currentPlaylist);
+
+        history.replaceState(
+            null,
+            "",
+            `create.html?id=${currentPlaylist}`
+        );
+    }
 
     const title = document.getElementById("title").value;
     const url = document.getElementById("url").value;
