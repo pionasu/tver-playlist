@@ -962,6 +962,18 @@ async function renamePlaylist() {
         }
     );
 
+    history.replaceState(
+        null,
+        "",
+        `create.html?id=${encodeURIComponent(currentPlaylist)}`
+    );
+
+    await updatePlaylistSelect();
+
+    document.getElementById("playlistSelect").value = currentPlaylist;
+
+    await render();
+
     const videosQ = query(
         collection(window.db, "videos"),
         where("playlistId", "==", currentPlaylist)
