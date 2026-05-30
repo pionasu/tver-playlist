@@ -378,8 +378,9 @@ function copyViewURL(name){
     alert("共有URLコピー完了");
 }
 
-async function deletePlaylist(name) {
+async function deletePlaylist(id) {
 
+    const playlist = playlists[id];
     const ok = confirm(`「${playlist.name}」を削除しますか？`);
     if (!ok) return;
 
@@ -392,7 +393,7 @@ async function deletePlaylist(name) {
 
     const videosQ = query(
         collection(window.db, "videos"),
-        where("playlist", "==", name)
+        where("playlistId", "==", name)
     );
 
     const videosSnap = await getDocs(videosQ);
