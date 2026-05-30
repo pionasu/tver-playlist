@@ -383,10 +383,6 @@ async function deletePlaylist(name) {
 
     undoStackPlaylist = {
         id: name,
-        playlist: {
-            name: name,
-            createdAt: new Date()
-        },
         videos: videosSnap.docs.map(docSnap => ({
             id: docSnap.id,
             data: docSnap.data()
@@ -416,11 +412,14 @@ function showUndoToastPlaylist() {
 
         if (!undoStackPlaylist) return;
 
-        const { id, playlist, videos } = undoStackPlaylist;
+        const { id, videos } = undoStackPlaylist;
 
         try {
             // プレイリスト復元
-            await setDoc(doc(window.db, "playlists", id), playlist);
+            await setDoc(doc(window.db, "playlists", id), {
+                name: id,
+                createdAt: new Date()
+            });
 
             // videos復元
             for (const v of videos) {
@@ -432,8 +431,8 @@ function showUndoToastPlaylist() {
             currentPlaylist = id;
             localStorage.setItem("lastPlaylist", id);
 
-            await updatePlaylistSelect();
-            await render();
+            await loadPlaylists();
+            render();
 
             toast.remove();
 
@@ -453,19 +452,10 @@ function showUndoToastPlaylist() {
     // 5秒で消える（ホバーで延長付き）
     let timer = setTimeout(() => {
         undoStackPlaylist = null;
-        toast.remove();
-    }, 5000);
-
-    toast.addEventListener("mouseenter", () => {
-        clearTimeout(timer);
-    });
-
-    toast.addEventListener("mouseleave", () => {
-        timer = setTimeout(() => {
-            undoStackPlaylist = null;
+        if (toast && toast.parentNode) {
             toast.remove();
-        }, 3000);
-    });
+        }
+    }, 5000);
 }
 
 function styleUndoToast(toast, type = "video") {
