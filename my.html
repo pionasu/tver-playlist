@@ -157,6 +157,7 @@ async function loadPlaylists() {
         collection(window.db, "videos")
     );
 
+    // プレイリスト作成
     playlistSnap.forEach(docSnap => {
 
         const data = docSnap.data();
@@ -168,21 +169,50 @@ async function loadPlaylists() {
             return;
         }
 
-        playlists[data.name] = [];
+        playlists[docSnap.id] = {
+            id: docSnap.id,
+            name: data.name,
+            videos: []
+        };
     });
 
+    // 動画振り分け
     videoSnap.forEach(docSnap => {
 
         const video = docSnap.data();
 
-        if (!playlists[video.playlist]) {
-            playlists[video.playlist] = [];
-        }
+        if (!video.playlistId) return;
 
-        playlists[video.playlist].push(video);
+        if (!playlists[video.playlistId]) return;
+
+        playlists[video.playlistId].videos.push({
+            id: docSnap.id,
+            ...video
+        });
     });
 
-    playlistOrder = Object.keys(playlists);
+    // 並び順読込
+    const savedOrder =
+        JSON.parse(
+            localStorage.getItem("playlistOrder") || "[]"
+        );
+
+    if (savedOrder.length) {
+
+        playlistOrder = savedOrder.filter(
+            id => playlists[id]
+        );
+
+        Object.keys(playlists).forEach(id => {
+            if (!playlistOrder.includes(id)) {
+                playlistOrder.push(id);
+            }
+        });
+
+    } else {
+
+        playlistOrder = Object.keys(playlists);
+    }
 }
 
 function render() {
@@ -207,9 +237,13 @@ function render() {
 
     empty.style.display = "none";
 
-    names.forEach(name => {
+    playlistOrder.forEach(id => {
 
-        const firstVideo = playlists[name][0];
+        const playlist = playlists[id];
+
+        if (!playlist) return;
+
+        const firstVideo = playlist.videos[0];
 
         const thumb = firstVideo?.thumb
             ? `
@@ -243,7 +277,7 @@ function render() {
                         width:100%;
                     "
                 >
-                    ${name}
+                    ${playlist.name}
                 </div>
 
                 <div
@@ -260,7 +294,7 @@ function render() {
                             color:#888;
                         "
                     >
-                        ${playlists[name].length}件
+                        ${playlists.videos.length}件
                     </div>
 
                     <div class="btns">
@@ -286,7 +320,7 @@ function render() {
         editBtn.onclick = function (event) {
             event.stopPropagation();
             location.href=
-                `create.html?id=${encodeURIComponent(name)}`;
+                `create.html?id=${encodeURIComponent(id)}`;
         };
 
         const deleteBtn = div.querySelector(".deleteBtn");
@@ -346,7 +380,7 @@ function copyViewURL(name){
 
 async function deletePlaylist(name) {
 
-    const ok = confirm(`「${name}」を削除しますか？`);
+    const ok = confirm(`「${playlist.name}」を削除しますか？`);
     if (!ok) return;
 
     const playlistQ = query(
