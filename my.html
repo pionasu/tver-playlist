@@ -182,9 +182,7 @@ async function loadPlaylists() {
         playlists[video.playlist].push(video);
     });
 
-    if (!playlistOrder.length) {
-        playlistOrder = Object.keys(playlists);
-    }
+    playlistOrder = Object.keys(playlists);
 }
 
 function render() {
