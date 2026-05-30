@@ -135,6 +135,9 @@
 let playlists = {};
 let playlistOrder = [];
 
+let undoStackPlaylist = null;
+let currentPlaylist = null;
+
 window.onload = async function () {
     await loadPlaylists();
     render();
@@ -378,7 +381,19 @@ async function deletePlaylist(name) {
 
     render();
 
-    showUndoToast(name, deletedVideos);
+    undoStackPlaylist = {
+        id: name,
+        playlist: {
+            name: name,
+            createdAt: new Date()
+        },
+        videos: videosSnap.docs.map(docSnap => ({
+            id: docSnap.id,
+            data: docSnap.data()
+        }))
+    };
+
+showUndoToastPlaylist();
 }
 
 function showUndoToastPlaylist() {
