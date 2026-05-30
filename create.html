@@ -839,8 +839,6 @@ async function removeVideoFirestore(id) {
 
 async function createPlaylist() {
 
-    const playlistId = crypto.randomUUID();
-
     const name = prompt("プレイリスト名");
 
     if (!name || !name.trim()) {
@@ -881,7 +879,10 @@ async function renamePlaylist() {
 
     if (!currentPlaylist) {
 
-        const newName =prompt("新しいプレイリスト名");
+        const currentOption = document.getElementById("playlistSelect").selectedOptions[0];
+        const currentName = currentOption?.textContent || "";
+
+        const newName =prompt("新しいプレイリスト名", currentName);
 
         if (
             !newName ||
@@ -953,7 +954,7 @@ async function renamePlaylist() {
 
     const q = query(
         collection(window.db, "playlists"),
-        where("name", "==", currentPlaylist)
+        where("id", "==", currentPlaylist)
     );
 
     const snap = await getDocs(q);
@@ -975,17 +976,7 @@ async function renamePlaylist() {
     const videosSnap = await getDocs(videosQ);
 
     for (const docSnap of videosSnap.docs) {
-        await updateDoc(
-            doc(window.db, "videos", docSnap.id),
-            {
-                playlistId: cleanName
-            }
-        );
     }
-
-    currentPlaylist = cleanName;
-
-    localStorage.setItem("lastPlaylist", currentPlaylist);
 
     await updatePlaylistSelect();
     render();
@@ -1271,7 +1262,7 @@ function showUndoToastPlaylist(name, playlistData, deletedVideos) {
                     collection(window.db, "videos"),
                     {
                         ...video,
-                        playlist: name,
+                        playlistId: name,
                         createdAt: new Date()
                     }
                 );
