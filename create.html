@@ -499,11 +499,22 @@ window.onload = async function () {
     const urlPlaylist = getPlaylistFromURL();
 
     if (!currentPlaylist) {
-        currentPlaylist = "";
+        const docRef = await addDoc(
+            collection(window.db, "playlists"),
+            {
+                name: "新規プレイリスト",
+                createdAt: new Date(),
+                isTemp: true
+            }
+        );
+        currentPlaylist = docRef.id;
+        localStorage.setItem("lastPlaylist", currentPlaylist),
+        history.replaceState(
+            null,
+            "",
+            `create.html?id=${encodeURIComponent(currentPlaylist)}`
+        );
     }
-
-    localStorage.setItem("lastPlaylist", currentPlaylist)
-
     await updatePlaylistSelect();
     await removeExpiredVideos();
     await render();
@@ -964,7 +975,8 @@ async function renamePlaylist() {
     await updateDoc(
         playlistRef,
         {
-            name: cleanName
+            name: cleanName,
+            isTemp: false
         }
     );
 
