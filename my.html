@@ -405,7 +405,7 @@ function showUndoToastPlaylist() {
 
     let used = false;
 
-    undo.onclick = async function () {
+    undo.addEventListener = ("click", async function () {
         if (used) return;
         used = true;
         undo.disabled = true;
@@ -441,7 +441,7 @@ function showUndoToastPlaylist() {
             undo.disabled = false;
             used = false;
         }
-    };
+    });
 
     toast.appendChild(text);
     toast.appendChild(undo);
@@ -449,9 +449,7 @@ function showUndoToastPlaylist() {
     styleUndoToast(toast, "playlist");
     document.body.appendChild(toast);
 
-    // 5秒で消える（ホバーで延長付き）
     let timer = setTimeout(() => {
-        undoStackPlaylist = null;
         if (toast && toast.parentNode) {
             toast.remove();
         }
@@ -489,7 +487,7 @@ function styleUndoToast(toast, type = "video") {
         text.style.minWidth = "0";
     }
 
-    const btn = toast.querySelector("button");
+    const btn = undo;
     if (btn) {
         btn.style.padding = "6px 12px";
         btn.style.borderRadius = "8px";
