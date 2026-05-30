@@ -437,6 +437,8 @@ let selectedTags = [];
 
 let undoStack = null;
 
+let undoStackPlaylist = null;
+
 document.querySelectorAll(".memberTag").forEach(btn => {
     btn.onclick = () => {
         const tag = btn.dataset.tag;
@@ -998,7 +1000,7 @@ async function renamePlaylist() {
 
 async function deletePlaylist(name) {
 
-    const playlistName = 
+    const playlistName =
         document.getElementById("playlistSelect")
         .selectedOptions[0]
         ?.textContent || "";
@@ -1006,17 +1008,12 @@ async function deletePlaylist(name) {
     const ok = confirm(`「${playlistName}」を削除しますか？`);
     if (!ok) return;
 
-    const playlistRef =
-        doc(window.db, "playlists", name);
+    const playlistRef = doc(window.db, "playlists", name);
+    const playlistSnap = await getDoc(playlistRef);
 
-    const playlistSnap =
-        await getDoc(playlistRef);
+    if (!playlistSnap.exists()) return;
 
-    let playlistData = null;
-
-    if (playlistSnap.exists()) {
-        playlistData = playlistSnap.data();
-    }
+    const playlistData = playlistSnap.data();
 
     const videosQ = query(
         collection(window.db, "videos"),
@@ -1025,30 +1022,87 @@ async function deletePlaylist(name) {
 
     const videosSnap = await getDocs(videosQ);
 
-    let deletedVideos = [];
-
+    const deletedVideos = [];
     videosSnap.forEach(docSnap => {
-        deletedVideos.push(docSnap.data());
+        deletedVideos.push({
+            id: docSnap.id,
+            data: docSnap.data()
+        });
     });
 
+    // ★UNDO用に保存
+    undoStackPlaylist = {
+        id: name,
+        playlist: playlistData,
+        videos: deletedVideos
+    };
+
+    // 削除
     await deleteDoc(playlistRef);
 
-    for (const docSnap of videosSnap.docs) {
-        await deleteDoc(
-            doc(window.db, "videos", docSnap.id)
-        );
+    for (const v of videosSnap.docs) {
+        await deleteDoc(doc(window.db, "videos", v.id));
     }
 
-    currentPlaylist = ""
+    currentPlaylist = "";
 
     await updatePlaylistSelect();
     render();
 
-    showUndoToastPlaylist(
-        playlistName,
-        playlistData,
-        deletedVideos
-    );
+    showUndoToastPlaylist();
+}
+
+function showUndoToastPlaylist() {
+
+    const toast = document.createElement("div");
+    toast.textContent = "プレイリストを削除しました";
+
+    const undo = document.createElement("button");
+    undo.textContent = "元に戻す";
+
+    let used = false;
+
+    undo.onclick = async function () {
+        if (used) return;
+        used = true;
+
+        if (!undoStackPlaylist) return;
+
+        const { id, playlist, videos } = undoStackPlaylist;
+
+        // ①プレイリスト復元（同じIDで戻す）
+        await setDoc(doc(window.db, "playlists", id), playlist);
+
+        // ②動画も復元
+        for (const v of videos) {
+            await setDoc(doc(window.db, "videos", v.id), v.data);
+        }
+
+        undoStackPlaylist = null;
+
+        currentPlaylist = id;
+        localStorage.setItem("lastPlaylist", id);
+
+        history.replaceState(
+            null,
+            "",
+            `create.html?id=${id}`
+        );
+
+        await updatePlaylistSelect();
+        await render();
+
+        toast.remove();
+    };
+
+    toast.appendChild(undo);
+    styleToast(toast);
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        undoStackPlaylist = null;
+        toast.remove();
+    }, 5000);
 }
 
 async function updatePlaylistSelect() {
