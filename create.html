@@ -836,9 +836,7 @@ async function createPlaylist() {
 
     const name = prompt("プレイリスト名");
 
-    if (!name || !name.trim()) {
-        return;
-    }
+    if (!name || !name.trim()) return;
 
     const cleanName = name.trim();
 
@@ -863,11 +861,15 @@ async function createPlaylist() {
     );
 
     currentPlaylist = docRef.id;
-
     localStorage.setItem("lastPlaylist", currentPlaylist);
 
-    await updatePlaylistSelect();
+    history.replaceState(
+        null,
+        "",
+        `create.html?id=${encodeURIComponent(currentPlaylist)}`
+    );
 
+    await updatePlaylistSelect();
     document.getElementById("playlistSelect").value = currentPlaylist;
 
     await render();
@@ -1019,7 +1021,7 @@ async function deletePlaylist(name) {
 
     currentPlaylist = ""
 
-    updatePlaylistSelect();
+    await updatePlaylistSelect();
     render();
 
     showUndoToastPlaylist(
@@ -1188,10 +1190,7 @@ function showUndoToastFirestore() {
 
         try {
             // ★同じIDで復元（重要）
-            await setDoc(doc(window.db, "videos", id), {
-                ...undoStack.data,
-                restoredAt: new Date()
-            });
+            await setDoc(doc(window.db, "videos", id), undoStack.data);
 
             undoStack = null;
 
