@@ -654,10 +654,14 @@ async function render() {
         return;
     }
 
+    const playlistDoc = await getDoc(
+        doc(window.db, "playlists", currentPlaylist)
+    );
+    const playlistName = playlistDoc.data()?.name || "";
+
     const q = query(
         collection(window.db, "videos"),
-        where("playlistId", "==", currentPlaylist),
-        orderBy("order")
+        where("playlist", "==", PlaylistName),
     );
 
     const snap = await getDocs(q);
