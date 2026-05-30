@@ -435,6 +435,8 @@ let editingIndex = null;
 
 let selectedTags = [];
 
+let undoStack = null;
+
 document.querySelectorAll(".memberTag").forEach(btn => {
     btn.onclick = () => {
         const tag = btn.dataset.tag;
@@ -790,6 +792,13 @@ function editVideo (id, title, url, thumb, endDate, autoDelete, tags) {
     document.getElementById("endDate").value = endDate || "";
     document.getElementById("autoDelete").checked = autoDelete || false;
 
+    selectedTags = tags || [];
+
+    document.querySelectorAll(".memberTag").forEach(btn => {
+        const tag = btn.dataset.tag;
+        btn.classList.toggle("active", selectedTags.includes(tag));
+    });
+
     document.querySelector(".addButton").textContent = "更新";
 
     document.getElementById("editArea")
@@ -804,39 +813,23 @@ async function removeVideoFirestore(id) {
     const ok = confirm("削除しますか？");
     if (!ok) return;
 
-    try {
-        const docRef = doc(window.db, "videos", id);
-        const snap = await getDoc(docRef);
+    const docRef = doc(window.db, "videos", id);
+    const snap = await getDoc(docRef);
 
-        if (!snap.exists()) {
-            alert("データが見つかりません");
-            return;
-        }
+    if (!snap.exists()) return;
 
-        const video = snap.data();
+    const data = snap.data();
 
-        let trash = JSON.parse(localStorage.getItem("trashVideos") || "{}");
+    // ★完全保存（ID込み）
+    undoStack = {
+        id,
+        data: JSON.parse(JSON.stringify(data))
+    };
 
-        const key = currentPlaylist;
+    await deleteDoc(docRef);
+    await render();
 
-        if (!trash[key]) trash[key] = [];
-
-        trash[key].push({
-            id,
-            video
-        });
-
-        localStorage.setItem("trashVideos", JSON.stringify(trash));
-
-        await deleteDoc(docRef);
-
-        render();
-
-        showUndoToastFirestore(id, video);
-    } catch (e) {
-        console.error(e);
-        alert("削除に失敗しました");
-    }  
+    showUndoToastFirestore();
 }
 
 async function createPlaylist() {
@@ -1175,7 +1168,7 @@ new Sortable(
     }
 );
 
-function showUndoToastFirestore(id, video) {
+function showUndoToastFirestore() {
 
     const toast = document.createElement("div");
     toast.textContent = "動画を削除しました";
@@ -1183,115 +1176,42 @@ function showUndoToastFirestore(id, video) {
     const undo = document.createElement("button");
     undo.textContent = "元に戻す";
 
-    undo.style.marginLeft = "10px";
-    undo.style.background = "white";
-    undo.style.color = "black";
-    undo.style.border = "none";
-    undo.style.borderRadius = "6px"
-    undo.style.padding = "4px 8px"
-    undo.style.cursor = "pointer";
-    undo.style.display = "flex";
-    undo.style.alignItems = "center";
-    undo.style.justifyContent = "center";
+    let used = false;
 
     undo.onclick = async function () {
+        if (used) return;
+        used = true;
+
+        if (!undoStack) return;
+
+        const { id, data } = undoStack;
 
         try {
-            await addDoc(collection(window.db, "videos"), {
-                ...video,
-                playlistId: currentPlaylist,
-                createdAt: new Date()
+            // ★同じIDで復元（重要）
+            await setDoc(doc(window.db, "videos", id), {
+                ...undoStack.data,
+                restoredAt: new Date()
             });
 
-            let trash = JSON.parse(localStorage.getItem("trashVideos") || "{}");
+            undoStack = null;
 
-            if (trash[currentPlaylist]) {
-                trash[currentPlaylist] = trash[currentPlaylist].filter(v => v.id !== id);
-            }
-
-            localStorage.setItem("trashVideos", JSON.stringify(trash));
-
-            render();
-            toast.remove();
-        } catch (e) {
-            console.error(e);
-            alert("復元に失敗しました");
-        }
-    };
-
-    toast.appendChild(undo);
-
-    styleToast(toast);
-    document.body.appendChild(toast);
-
-    setTimeout(() => toast.remove(), 5000);
-}
-
-function showUndoToastPlaylist(name, playlistData, deletedVideos) {
-
-    const toast = document.createElement("div");
-    toast.textContent = "プレイリストを削除しました";
-
-    const undo = document.createElement("button");
-    undo.textContent = "元に戻す";
-
-    undo.style.marginLeft = "10px";
-    undo.style.background = "white";
-    undo.style.color = "black";
-    undo.style.border = "none";
-    undo.style.borderRadius = "6px";
-    undo.style.padding = "4px 8px";
-    undo.style.cursor = "pointer";
-
-    undo.onclick = async function () {
-
-        try {
-
-            await addDoc(
-                collection(window.db, "playlists"),
-                {
-                    name: name,
-                    createdAt: new Date()
-                }
-            );
-
-            for (const video of deletedVideos) {
-
-                await addDoc(
-                    collection(window.db, "videos"),
-                    {
-                        ...video,
-                        playlistId: name,
-                        createdAt: new Date()
-                    }
-                );
-            }
-
-            localStorage.setItem(
-                "lastPlaylist",
-                currentPlaylist
-            );
-
-            await updatePlaylistSelect();
             await render();
-
             toast.remove();
 
         } catch (e) {
-
             console.error(e);
-
             alert("復元に失敗しました");
         }
     };
 
     toast.appendChild(undo);
-
     styleToast(toast);
-
     document.body.appendChild(toast);
 
-    setTimeout(() => toast.remove(), 5000);
+    setTimeout(() => {
+        undoStack = null;
+        toast.remove();
+    }, 5000);
 }
 
 function styleToast(toast) {
@@ -1441,7 +1361,8 @@ import {
     doc,
     getDoc,
     updateDoc,
-    orderBy
+    orderBy,
+    setDoc
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1470,6 +1391,7 @@ window.doc = doc;
 window.getDoc = getDoc;
 window.updateDoc = updateDoc;
 window.orderBy = orderBy;
+window.setDoc = setDoc;
 
 </script>
 
