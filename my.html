@@ -138,6 +138,8 @@ let playlistOrder = [];
 let undoStackPlaylist = null;
 let currentPlaylist = null;
 
+let Sortable = null;
+
 window.onload = async function () {
     await loadPlaylists();
     render();
@@ -180,7 +182,9 @@ async function loadPlaylists() {
         playlists[video.playlist].push(video);
     });
 
-    playlistOrder = Object.keys(playlists);
+    if (!playlistOrder.length) {
+        playlistOrder = Object.keys(playlists);
+    }
 }
 
 function render() {
@@ -298,25 +302,29 @@ function render() {
         list.appendChild(div);
     });
 
-    new Sortable(list, {
+    if (sortable) {
+        sortable.destroy();
+    }
+
+    sortable = new Sortable(list, {
         animation: 150,
 
-    // ★重要：スクロールと誤爆防止
         delay: 150,
         delayOnTouchOnly: true,
         touchStartThreshold: 8,
 
-    // スクロール許可（スマホ重要）
         scroll: true,
         scrollSensitivity: 80,
         scrollSpeed: 10,
 
         onEnd: function () {
+
             const newOrder = [];
 
-            document.querySelectorAll(".video").forEach(item => {
-                newOrder.push(item.dataset.name);
-            });
+            document.querySelectorAll(".video")
+                .forEach(item => {
+                    newOrder.push(item.dataset.name);
+                });
 
             playlistOrder = newOrder;
 
