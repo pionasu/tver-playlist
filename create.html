@@ -498,25 +498,9 @@ window.onload = async function () {
 
     const urlPlaylist = getPlaylistFromURL();
 
+    // URL or 保存済み or 空でもOK（ここでは作らない）
     if (!currentPlaylist || currentPlaylist === "undefined") {
-        const docRef = await addDoc(
-            collection(window.db, "playlists"),
-            {
-                name: "新規プレイリスト",
-                createdAt: new Date(),
-                isTemp: true
-            }
-        );
-
-        currentPlaylist = docRef.id;
-
-        localStorage.setItem("lastPlaylist", currentPlaylist);
-
-        history.replaceState(
-            null,
-            "",
-            `create.html?id=${currentPlaylist}`
-        );
+        currentPlaylist = "";
     }
 
     await updatePlaylistSelect();
@@ -593,54 +577,58 @@ async function addVideo () {
 
     if (!title || !url) return;
 
+    // ★ここで初めてプレイリスト作る（重要）
+    if (!currentPlaylist) {
+
+        const docRef = await addDoc(
+            collection(window.db, "playlists"),
+            {
+                name: "新規プレイリスト",
+                createdAt: new Date(),
+                isTemp: true
+            }
+        );
+
+        currentPlaylist = docRef.id;
+
+        localStorage.setItem("lastPlaylist", currentPlaylist);
+
+        history.replaceState(
+            null,
+            "",
+            `create.html?id=${currentPlaylist}`
+        );
+    }
+
     if (fileInput.files && fileInput.files[0]) {
         thumb = await fileToBase64(fileInput.files[0]);
     }
 
-    if (editingIndex !== null) {
+    const q = query(
+        collection(window.db, "videos"),
+        where("playlistId", "==", currentPlaylist),
+        orderBy("order")
+    );
 
-        await updateDoc (
-            doc(window.db, "videos", editingIndex),
-            {
-                title,
-                url,
-                thumb,
-                endDate,
-                autoDelete,
-                tags: [...selectedTags]
-            }
-        );
+    const snap = await getDocs(q);
+    const order = snap.size;
 
-        editingIndex = null;
+    await addDoc(
+        collection(window.db, "videos"),
+        {
+            playlistId: currentPlaylist,
+            title,
+            url,
+            thumb,
+            endDate,
+            autoDelete,
+            order,
+            tags: [...selectedTags],
+            createdAt: new Date()
+        }
+    );
 
-        document.querySelector(".addButton").textContent = "追加";
-    } else {
-        const q = query(
-            collection(window.db, "videos"),
-            where("playlistId", "==", currentPlaylist),
-            orderBy("order")
-        );
-        
-        const snap = await getDocs(q);
-
-        const order = snap.size;
-
-        await addDoc(
-            collection(window.db, "videos"),
-            {
-                playlistId: currentPlaylist,
-                title,
-                url,
-                thumb,
-                endDate,
-                autoDelete,
-                order,
-                tags: [...selectedTags],
-                createdAt: new Date()
-            }
-        );
-    }
-
+    // reset
     document.getElementById("title").value = "";
     document.getElementById("url").value = "";
     document.getElementById("thumb").value = "";
@@ -652,11 +640,9 @@ async function addVideo () {
     selectedTags = [];
 
     document.querySelectorAll(".memberTag")
-    .forEach(btn => {
-        btn.classList.remove("active");
-    });
+        .forEach(btn => btn.classList.remove("active"));
 
-    render();
+    await render();
 }
 
 async function render() {
