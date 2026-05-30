@@ -381,56 +381,53 @@ function copyViewURL(name){
 async function deletePlaylist(id) {
 
     const playlist = playlists[id];
+
     const ok = confirm(`「${playlist.name}」を削除しますか？`);
     if (!ok) return;
 
-    const playlistQ = query(
-        collection(window.db, "playlists"),
-        where("name", "==", name)
+    const playlistRef = doc(
+        window.db,
+        "playlists",
+        id
     );
-
-    const playlistSnap = await getDocs(playlistQ);
 
     const videosQ = query(
         collection(window.db, "videos"),
-        where("playlistId", "==", name)
+        where("playlistId", "==", id)
     );
 
     const videosSnap = await getDocs(videosQ);
 
-    let deletedVideos = [];
+    const deletedVideos = [];
 
     videosSnap.forEach(docSnap => {
-        deletedVideos.push(docSnap.data());
+        deletedVideos.push({
+            id: docSnap.id,
+            data: docSnap.data()
+        });
     });
 
-    for (const docSnap of playlistSnap.docs) {
+    // UNDO用
+    undoStackPlaylist = {
+        id,
+        playlist: playlist,
+        videos: deletedVideos
+    };
 
-        await deleteDoc(
-            doc(window.db, "playlists", docSnap.id)
-        );
-    }
-
+    // 動画削除
     for (const docSnap of videosSnap.docs) {
-
         await deleteDoc(
             doc(window.db, "videos", docSnap.id)
         );
     }
 
-    await loadPlaylists();
+    // プレイリスト削除
+    await deleteDoc(playlistRef);
 
+    await loadPlaylists();
     render();
 
-    undoStackPlaylist = {
-        id: name,
-        videos: videosSnap.docs.map(docSnap => ({
-            id: docSnap.id,
-            data: docSnap.data()
-        }))
-    };
-
-showUndoToastPlaylist();
+    showUndoToastPlaylist();
 }
 
 function showUndoToastPlaylist() {
