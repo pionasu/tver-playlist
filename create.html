@@ -643,6 +643,7 @@ async function addVideo () {
 }
 
 async function render() {
+    console.log("currentPlaylist=", currentPlaylist);
 
     const list = document.getElementById("list");
 
@@ -660,6 +661,7 @@ async function render() {
     );
 
     const snap = await getDocs(q);
+    console.log("動画件数=", snap.size);
 
     const docs = snap.docs.sort((a, b) => {
         return (a.data().order ?? 0) - (b.data().order ?? 0);
@@ -929,11 +931,12 @@ async function renamePlaylist() {
 
         return;
     }
+    const currentName = 
+        document.getElementById("playlistSelect")
+        .selectedOptions[0]
+        ?.textContent || "";
 
-    const newName = prompt(
-        "新しいプレイリスト名",
-        currentPlaylist
-    );
+    const newName = prompt("新しいプレイリスト名", currentName);
 
     if (
         !newName ||
@@ -1027,7 +1030,7 @@ async function deletePlaylist(name) {
     render();
 
     showUndoToastPlaylist(
-        name,
+        playlistname,
         playlistData,
         deletedVideos
     );
