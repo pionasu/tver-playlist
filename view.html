@@ -333,12 +333,12 @@ body{
 const params =
     new URLSearchParams(location.search);
 
-const playlistName =
+const playlistId =
     params.get("id");
 
 document.getElementById("playlistTitle")
     .textContent =
-    playlistName || "プレイリスト";
+    playlistId || "プレイリスト";
 
 const videoList =
     document.getElementById("videoList");
@@ -361,9 +361,27 @@ window.onload = async function () {
         await new Promise(r => setTimeout(r, 100));
     }
 
+    const playlistDoc =
+        await getDoc(
+            doc(window.db, "playlists", playlistId)
+        );
+
+    if (playlistDoc.exists()) {
+
+        document.getElementById("playlistTitle")
+            .textContent =
+            playlistDoc.data().name;
+
+    } else {
+
+        document.getElementById("playlistTitle")
+            .textContent =
+            "プレイリスト";
+    }
+
     const q = query(
         collection(window.db, "videos"),
-        where("playlist", "==", playlistName),
+        where("playlist", "==", playlistId),
         orderBy("order")
     );
 
@@ -564,7 +582,8 @@ function setupFilters(){
            where,
            orderBy,
            deleteDoc,
-           doc
+           doc,
+           getDoc
          } 
   from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use
@@ -594,6 +613,7 @@ function setupFilters(){
   window.orderBy = orderBy;
   window.deleteDoc = deleteDoc;
   window.doc = doc;
+  window.getDoc;
 </script>
 
 </body>
