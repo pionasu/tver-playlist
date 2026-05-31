@@ -369,6 +369,7 @@ function render() {
 }
 
 async function copyViewURL(id){
+    alert("共有開始");
 
     const playlistDoc = await getDoc(
         doc(window.db, "playlists", id)
@@ -379,20 +380,47 @@ async function copyViewURL(id){
         return;
     }
 
-    const data = playlistDoc.data();
+    const title =
+        playlistDoc.data().name || "プレイリスト";
 
-    const title = data.name || "プレイリスト";
-    const slug = data.slug;
+    const q = query(
+        collection(window.db, "shortUrls"),
+        where("playlistId", "==", id)
+    );
+
+    const snap = await getDocs(q);
+
+    let shortId;
+
+    if (!snap.empty) {
+
+        shortId = snap.docs[0].id;
+
+    } else {
+
+        shortId =
+            Math.random()
+                .toString(36)
+                .substring(2, 8);
+
+        await setDoc(
+            doc(window.db, "shortUrls", shortId),
+            {
+                playlistId: id,
+                createdAt: new Date()
+            }
+        );
+    }
 
     const url =
-        `${location.origin}/share.html?slug=${encodeURIComponent(slug)}`;
+        `${location.origin}/s/${shortId}`;
 
     if (navigator.share) {
 
-        navigator.share({
-            title: title,
+        await navigator.share({
+            title,
             text: title,
-            url: url
+            url
         });
 
     } else {
@@ -402,58 +430,6 @@ async function copyViewURL(id){
             `${title}\n${url}`
         );
     }
-}
-
-async function deletePlaylist(id) {
-
-    const playlist = playlists[id];
-
-    const ok = confirm(`「${playlist.name}」を削除しますか？`);
-    if (!ok) return;
-
-    const playlistRef = doc(
-        window.db,
-        "playlists",
-        id
-    );
-
-    const videosQ = query(
-        collection(window.db, "videos"),
-        where("playlistId", "==", id)
-    );
-
-    const videosSnap = await getDocs(videosQ);
-
-    const deletedVideos = [];
-
-    videosSnap.forEach(docSnap => {
-        deletedVideos.push({
-            id: docSnap.id,
-            data: docSnap.data()
-        });
-    });
-
-    // UNDO用
-    undoStackPlaylist = {
-        id,
-        playlist: playlist,
-        videos: deletedVideos
-    };
-
-    // 動画削除
-    for (const docSnap of videosSnap.docs) {
-        await deleteDoc(
-            doc(window.db, "videos", docSnap.id)
-        );
-    }
-
-    // プレイリスト削除
-    await deleteDoc(playlistRef);
-
-    await loadPlaylists();
-    render();
-
-    showUndoToastPlaylist();
 }
 
 function showUndoToastPlaylist() {
