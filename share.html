@@ -213,14 +213,32 @@ body{
 
 .shareBtn{
     border:none;
-    background:#fff;
+    background:linear-gradient(
+        135deg,
+        #ff8acb,
+        #ffb6e1
+    );
+
+    color:white;
     padding:8px 14px;
+
     border-radius:999px;
+
     font-size:13px;
     font-weight:700;
-    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+
     cursor:pointer;
-    white-space: nowrap;
+
+    white-space:nowrap;
+
+    box-shadow:
+        0 4px 10px rgba(255,138,203,.35);
+
+    transition:.15s;
+}
+
+.shareBtn:active{
+    transform:scale(.96);
 }
 
 </style>
@@ -244,7 +262,7 @@ body{
         class="shareBtn"
         onclick="sharePlaylist()"
     >
-        🔗共有
+        共有
     </button>
 
 </div>
