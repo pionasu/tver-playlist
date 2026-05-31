@@ -1477,11 +1477,38 @@ async function copyShareUrl() {
         doc(window.db, "playlists", currentPlaylist)
     );
 
-    const slug =
-        playlistDoc.data().slug || currentPlaylist;
+    // 既存の短縮URLを探す
+    const q = query(
+        collection(window.db, "shortUrls"),
+        where("playlistId", "==", currentPlaylist)
+    );
+
+    const snap = await getDocs(q);
+
+    let shortId;
+
+    if (!snap.empty) {
+
+        shortId = snap.docs[0].id;
+
+    } else {
+
+        shortId =
+            Math.random()
+                .toString(36)
+                .substring(2, 8);
+
+        await setDoc(
+            doc(window.db, "shortUrls", shortId),
+            {
+                playlistId: currentPlaylist,
+                createdAt: new Date()
+            }
+        );
+    }
 
     const shareUrl =
-        `${location.origin}/share.html?slug=${encodeURIComponent(slug)}`;
+        `${location.origin}/s/${shortId}`;
 
     if (navigator.share) {
 
@@ -1493,10 +1520,9 @@ async function copyShareUrl() {
     } else {
 
         prompt(
-            "このURLをコピーしてください", 
-            `${title}\n${shareUrl}`
+            "このURLをコピーしてください",
+            `${playlistDoc.data().name}\n${shareUrl}`
         );
-
     }
 }
 
