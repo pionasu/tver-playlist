@@ -450,12 +450,12 @@ function showUndoToastPlaylist() {
 
         if (!undoStackPlaylist) return;
 
-        const { id, videos } = undoStackPlaylist;
+        const { id, playlist, videos } = undoStackPlaylist;
 
         try {
             // プレイリスト復元
             await setDoc(doc(window.db, "playlists", id), {
-                name: id,
+                name: playlist.name,
                 createdAt: new Date()
             });
 
