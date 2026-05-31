@@ -381,7 +381,7 @@ window.onload = async function () {
 
     const q = query(
         collection(window.db, "videos"),
-        where("playlist", "==", playlistId),
+        where("playlistId", "==", playlistId),
         orderBy("order")
     );
 
@@ -613,7 +613,7 @@ function setupFilters(){
   window.orderBy = orderBy;
   window.deleteDoc = deleteDoc;
   window.doc = doc;
-  window.getDoc;
+  window.getDoc = getDoc;
 </script>
 
 </body>
