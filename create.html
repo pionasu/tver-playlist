@@ -1466,15 +1466,29 @@ function showFileName() {
     }
 }
 
-function copyShareUrl() {
+async function copyShareUrl() {
+
     if (!currentPlaylist) {
         alert("プレイリストを選択してください");
         return;
     }
 
+    const playlistDoc = await getDoc(
+        doc(window.db, "playlists", currentPlaylist)
+    );
+
+    if (!playlistDoc.exists()) {
+        alert("プレイリストが見つかりません");
+        return;
+    }
+
+    const slug = playlistDoc.data().slug;
+
     const shareUrl =
-        `${location.origin}/share.html?id=${encodeURIComponent(currentPlaylist)}`;
-    navigator.clipboard.writeText(shareUrl);
+        `${location.origin}/share.html?slug=${encodeURIComponent(slug)}`;
+
+    await navigator.clipboard.writeText(shareUrl);
+
     alert("共有URLをコピーしました");
 }
 
