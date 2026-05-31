@@ -586,6 +586,7 @@ async function addVideo () {
             collection(window.db, "playlists"),
             {
                 name: "新規プレイリスト",
+                slug: "",
                 createdAt: new Date(),
                 isTemp: true
             }
@@ -880,6 +881,7 @@ async function createPlaylist() {
         collection(window.db, "playlists"),
         {
             name: cleanName,
+            slug: cleanName.toLowerCase(),
             createdAt: new Date()
         }
     );
@@ -989,6 +991,7 @@ async function renamePlaylist() {
         playlistRef,
         {
             name: cleanName,
+            slug: cleanName.toLowerCase(),
             isTemp: false
         }
     );
