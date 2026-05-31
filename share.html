@@ -299,12 +299,13 @@ window.onload = async function () {
 
     const playlistId = new URLSearchParams(location.search).get("id");
 
-    const snap = await getDocs(
-        query(
-            collection(window.db, "playlists"),
-            where("id", "==", playlistId)
-        )
+    const playlistDoc = await getDocs(
+        doc(window.db, "playlists", playlistId)
     );
+
+    if (playlistDoc.exists()) {
+        playlistName = playlistDoc.data().name;
+    }
 
     snap.forEach(doc => {
         playlistName = doc.data().name;
@@ -591,6 +592,8 @@ async function sharePlaylist(){
   window.query = query;
   window.where = where;
   window.orderBy = orderBy;
+  window.doc = doc;
+  window.getDoc = getDoc;
 </script>
 
 </body>
