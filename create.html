@@ -615,20 +615,39 @@ async function addVideo () {
     const snap = await getDocs(q);
     const order = snap.size;
 
-    await addDoc(
-        collection(window.db, "videos"),
-        {
-            playlistId: currentPlaylist,
-            title,
-            url,
-            thumb,
-            endDate,
-            autoDelete,
-            order,
-            tags: [...selectedTags],
-            createdAt: new Date()
-        }
-    );
+    if (editingIndex) {
+
+        await updateDoc(
+            doc(window.db, "videos", editingIndex),
+            {
+                title,
+                url,
+                thumb,
+                endDate,
+                autoDelete,
+                tags: [...selectedTags]
+            }
+        );
+
+        editingIndex = null;
+
+    } else {
+
+        await addDoc(
+            collection(window.db, "videos"),
+            {
+                playlistId: currentPlaylist,
+                title,
+                url,
+                thumb,
+                endDate,
+                autoDelete,
+                order,
+                tags: [...selectedTags],
+                createdAt: new Date()
+            }
+        );
+    }
 
     // reset
     document.getElementById("title").value = "";
@@ -643,6 +662,8 @@ async function addVideo () {
 
     document.querySelectorAll(".memberTag")
         .forEach(btn => btn.classList.remove("active"));
+
+    document.querySelector(".addButton").textContent = "追加";
 
     await render();
 }
