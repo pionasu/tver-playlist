@@ -1,7 +1,8 @@
-<body>
 <h1>s.html OK</h1>
 
 <script>
-alert("s.html読めてる");
+document.body.insertAdjacentHTML(
+    "beforeend",
+    "<p>path=" + location.pathname + "</p>"
+);
 </script>
-</body>
