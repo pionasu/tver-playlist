@@ -1468,27 +1468,22 @@ function showFileName() {
 
 async function copyShareUrl() {
 
+    if (!currentPlaylist) {
+        alert("プレイリストを選択してください");
+        return;
+    }
+
+    const playlistDoc = await getDoc(
+        doc(window.db, "playlists", currentPlaylist)
+    );
+
+    const slug =
+        playlistDoc.data().slug || currentPlaylist;
+
+    const shareUrl =
+        `${location.origin}/share.html?slug=${encodeURIComponent(slug)}`;
+
     try {
-
-        if (!currentPlaylist) {
-            alert("プレイリストを選択してください");
-            return;
-        }
-
-        const playlistDoc = await getDoc(
-            doc(window.db, "playlists", currentPlaylist)
-        );
-
-        if (!playlistDoc.exists()) {
-            alert("プレイリストが見つかりません");
-            return;
-        }
-
-        const slug =
-            playlistDoc.data().slug || currentPlaylist;
-
-        const shareUrl =
-            `${location.origin}/share.html?slug=${encodeURIComponent(slug)}`;
 
         await navigator.clipboard.writeText(shareUrl);
 
@@ -1496,8 +1491,7 @@ async function copyShareUrl() {
 
     } catch (e) {
 
-        console.error(e);
-        alert("エラー: " + e.message);
+        prompt("このURLをコピーしてください", shareUrl);
 
     }
 }
