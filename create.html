@@ -1492,7 +1492,10 @@ async function copyShareUrl() {
 
     } else {
 
-        prompt("このURLをコピーしてください", shareUrl);
+        prompt(
+            "このURLをコピーしてください", 
+            `${title}\n${shareUrl}
+        );
 
     }
 }
