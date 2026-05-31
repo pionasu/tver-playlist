@@ -297,7 +297,30 @@ window.onload = async function () {
         await new Promise(r => setTimeout(r, 100));
     }
 
-    const playlistId = new URLSearchParams(location.search).get("id");
+    const params = new URLSearchParams(location.search);
+
+    let playlistId = params.get("id");
+
+    const slug = params.get("slug");
+
+    if (!playlistId && slug) {
+
+        const playlistQuery = query(
+            collection(window.db, "playlists"),
+            where("slug", "==", slug)
+        );
+
+        const playlistSnap = await getDocs(playlistQuery);
+
+        if (!playlistSnap.empty) {
+            playlistId = playlistSnap.docs[0].id;
+        }
+    }
+
+    if (!playlistId) {
+        alert("プレイリストが見つかりません");
+        return;
+    }
 
     const playlistDoc = await getDoc(
         doc(window.db, "playlists", playlistId)
