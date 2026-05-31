@@ -32,6 +32,7 @@ body{
     gap: 10px;
     padding: 16px 0 10px;
     grid-template-columns: 40px 1fr 40px;
+    position:relative;
 }
 
 .playlistTitle{
@@ -215,6 +216,21 @@ body{
     padding-top: 15px;
 }
 
+.shareBtn{
+    width:40px;
+    height:40px;
+
+    border:none;
+    border-radius:50%;
+
+    background:white;
+
+    font-size:20px;
+    cursor:pointer;
+
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+
 </style>
 </head>
 
@@ -224,13 +240,22 @@ body{
 
     <div class="header">
 
-        <div
-            id="playlistTitle"
-            class="playlistTitle"
-        >
-        </div>
+    <div></div>
 
+    <div
+        id="playlistTitle"
+        class="playlistTitle"
+    >
     </div>
+
+    <button
+        class="shareBtn"
+        onclick="sharePlaylist()"
+    >
+        🔗
+    </button>
+
+</div>
 
     <div class="filterArea">
 
@@ -535,11 +560,11 @@ async function sharePlaylist(){
     const playlistId = new URLSearchParams(location.search).get("id");
 
     const q = query(
-        collection(db, "shortUrls"),
+        collection(window.db, "shortUrls"),
         where("playlistId", "==", playlistId)
     );
 
-    const snap = await getDoc(q);
+    const snap = await getDocs(q);
 
     let shortId;
 
@@ -613,6 +638,7 @@ async function sharePlaylist(){
   window.orderBy = orderBy;
   window.doc = doc;
   window.getDoc = getDoc;
+  window.setDoc = setDoc;
 </script>
 
 </body>
