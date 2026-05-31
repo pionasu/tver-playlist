@@ -1,3 +1,14 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redirect...</title>
+</head>
+<body>
+
+読込中...
+
 <script type="module">
 
 import { initializeApp }
@@ -20,26 +31,44 @@ const firebaseConfig = {
   measurementId: "G-FKV7QE7KG7"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+try {
 
-const shortId = location.pathname.split("/").pop();
-document.body.innerHTML = `
-shortId = ${shortId}<br>
-path = ${location.pathname}
-`;
-return;
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-const snap = await getDoc(
-  doc(db, "shortUrls", shortId)
-);
+  const shortId =
+    location.pathname.split("/").pop();
 
-if (!snap.exists()) {
-  document.body.innerHTML = "URLが存在しません";
-} else {
-  location.replace(
-    `/share.html?id=${snap.data().playlistId}`
+  const snap = await getDoc(
+    doc(db, "shortUrls", shortId)
   );
+
+  if (!snap.exists()) {
+
+    document.body.innerHTML =
+      `shortUrls/${shortId} が見つかりません`;
+
+  } else {
+
+    const playlistId =
+      snap.data().playlistId;
+
+    location.replace(
+      `/share.html?id=${playlistId}`
+    );
+
+  }
+
+} catch (e) {
+
+  console.error(e);
+
+  document.body.innerHTML =
+    `<pre>${e.message}</pre>`;
+
 }
 
 </script>
+
+</body>
+</html>
