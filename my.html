@@ -368,14 +368,40 @@ function render() {
     });
 }
 
-function copyViewURL(name){
-    
+async function copyViewURL(id){
+
+    const playlistDoc = await getDoc(
+        doc(window.db, "playlists", id)
+    );
+
+    if (!playlistDoc.exists()) {
+        alert("プレイリストが見つかりません");
+        return;
+    }
+
+    const data = playlistDoc.data();
+
+    const title = data.name || "プレイリスト";
+    const slug = data.slug;
+
     const url =
-        location.origin +
-        "/share.html?id=" +
-        encodeURIComponent(name);
-    navigator.clipboard.writeText(url);
-    alert("共有URLコピー完了");
+        `${location.origin}/share.html?slug=${encodeURIComponent(slug)}`;
+
+    if (navigator.share) {
+
+        navigator.share({
+            title: title,
+            text: title,
+            url: url
+        });
+
+    } else {
+
+        prompt(
+            "このURLをコピーしてください",
+            `${title}\n${url}`
+        );
+    }
 }
 
 async function deletePlaylist(id) {
@@ -550,7 +576,7 @@ function styleUndoToast(toast, type = "video") {
   // Import the functions you need from the SDKs you need
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
-  import { getFirestore, collection, getDocs, deleteDoc, doc, query, where, addDoc, setDoc } 
+  import { getFirestore, collection, getDocs, deleteDoc, doc, query, where, addDoc, setDoc, getDoc } 
   from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
@@ -581,6 +607,7 @@ function styleUndoToast(toast, type = "video") {
   window.where = where;
   window.addDoc = addDoc;
   window.setDoc = setDoc;
+  window.getDoc = getDoc
 </script>
 
 </body>
