@@ -1,8 +1,40 @@
-<h1>s.html OK</h1>
+<script type="module">
 
-<script>
-document.body.insertAdjacentHTML(
-    "beforeend",
-    "<p>path=" + location.pathname + "</p>"
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+
+import {
+  getFirestore,
+  doc,
+  getDoc
+}
+from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCjIPTR43eqc9TaG9S9a13M8Nj7RcomuPk",
+  authDomain: "tver-playlist.firebaseapp.com",
+  projectId: "tver-playlist",
+  storageBucket: "tver-playlist.firebasestorage.app",
+  messagingSenderId: "474578557521",
+  appId: "1:474578557521:web:1e152de7d7edc9553ef670",
+  measurementId: "G-FKV7QE7KG7"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const shortId = location.pathname.split("/").pop();
+
+const snap = await getDoc(
+  doc(db, "shortUrls", shortId)
 );
-</script>
+
+if (!snap.exists()) {
+  document.body.innerHTML = "URLが存在しません";
+} else {
+  location.replace(
+    `/share.html?id=${snap.data().playlistId}`
+  );
+}
+
+</script>>
